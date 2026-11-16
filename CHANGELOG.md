@@ -9,6 +9,12 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- The production API's cold start no longer ends on `/500` (2026-11-16, owner decision): measured through `arsm.hu`, the first
+  request after the API scaled to zero took 41.3 s (replica scheduling ~10-15 s, the 309 MB image pull ~8 s, container
+  creation ~6 s, .NET start ~4 s, then up to 10 s until the next readiness probe), past the WebUI's 30 s request timeout. The
+  timeout is now 60 s (`services/http/api.client.ts`, within Nginx's default 60 s read timeout) and the API readiness probe
+  runs every 2 s instead of 10 (`deploy/azure/main.bicep`).
+  _Dev time: ~20 min wall-clock (2026-11-16 11:19 to 11:39 +01:00, mostly the two cold-start measurements). cost: not measured._
 - Lower Azure cost (2026-11-16, owner decision): the production API scales to zero when idle (`ARSM_API_ALWAYS_ON=false` in
   the root `.env`; the kit default stays `true`), and the two log alert rules `arsm-api-errors` and `arsm-api-warnings` run
   every 15 minutes over a 15-minute window instead of every 5 (`deploy/azure/guardrails.bicep`, a lower log alert fee).

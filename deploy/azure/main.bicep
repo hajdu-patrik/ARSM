@@ -371,7 +371,8 @@ resource apiApp 'Microsoft.App/containerApps@2024-03-01' = if (deployApps) {
                 port: 8080
                 httpHeaders: [ { name: 'Host', value: apiAppName } ]
               }
-              periodSeconds: 10
+              // A short period serves the request that woke the API from zero replicas sooner.
+              periodSeconds: 2
             }
           ]
         }

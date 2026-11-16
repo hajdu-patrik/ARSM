@@ -34,8 +34,9 @@ const CSRF_HEADER_NAME = 'X-CSRF-Token';
 /** HTTP methods the CSRF header attaches to; GET/HEAD/OPTIONS are excluded to avoid a needless CORS preflight. */
 const CSRF_PROTECTED_METHODS = new Set(['post', 'put', 'patch', 'delete']);
 
-/** A request that takes longer than this fails with a timeout error instead of hanging. */
-const REQUEST_TIMEOUT_MS = 30_000;
+/** A request that takes longer than this fails with a timeout error instead of hanging; it covers the
+ * production API's cold start from zero replicas (about 30-40 s). */
+const REQUEST_TIMEOUT_MS = 60_000;
 
 /** Name of the Web Lock that lets one tab at a time refresh the session of this origin. */
 const REFRESH_LOCK_NAME = 'arsm-session-refresh';

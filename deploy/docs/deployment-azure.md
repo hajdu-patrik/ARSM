@@ -111,7 +111,7 @@ Optional:
 | Key | Meaning |
 | --- | --- |
 | `ARSM_AZURE_LOCATION` | Azure region, default `swedencentral`. Student subscriptions only allow some regions; on a `RequestDisallowedByAzure` error pick another one. PostgreSQL Flexible Server can still be restricted in an allowed region (`ParameterOutOfRange` on `Version`); `az postgres flexible-server list-skus -l <region>` shows it. |
-| `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (cold start of roughly 10-20 s: .NET start; the migrations run in the job, not at API start). |
+| `ARSM_API_ALWAYS_ON` | Default `true`: one API replica always runs. `false` scales it to zero when idle (production uses `false` since 2026-11-16). The first request after idle then waits for a cold start, measured at about 41 s on 2026-11-16: replica scheduling ~10-15 s, the image pull ~8 s, container creation ~6 s, .NET start ~4 s and the readiness probe, now every 2 s instead of 10. The WebUI request timeout is 60 s for it and Nginx's default 60 s read timeout covers it; the migrations run in the job, not at API start. |
 | `ARSM_WEB_ALWAYS_ON` | Default `false`: the web app (gate + Nginx) scales to zero when idle, a cold start of about 2 s. `true` keeps one replica running (more credit used). |
 | `ARSM_BLOB_CONTAINER` | Blob container for profile pictures, default `arsm-profile-pictures`. |
 | `ARSM_ALERT_EMAIL` | Address for the alert and budget mails (see Guard rails in section 8). Empty (default): no action group, alert rule or budget is created. |
