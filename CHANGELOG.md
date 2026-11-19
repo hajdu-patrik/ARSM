@@ -9,6 +9,24 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Whole-project audit and cleanup (2026-11-18/19, owner-approved list): five read-only audit agents found no critical
+  issue and one high one (the vehicle editor could seed from a stale cached vehicle). The owner approved 100 items, applied
+  in one `arsm-chain` run (16 packages): 21 behaviour fixes, among them an atomic password change/reset with token
+  revocation, the standard 401 for an Identity user without a mechanic row, registration validation before any write,
+  `:int` appointment routes, the denylist unique-violation race, email timeouts, and the scheduler's stale `now`,
+  filters and lookups; plus a11y names and states, dead code, duplicated helpers, stale comments, test hygiene and docs.
+  Two further defects found during the run (the save confirmation's Cancel dropped edits; the intake dialog had no Cancel
+  before a customer was chosen) are fixed too. Every behaviour fix carries a regression test (xUnit, `.http` or
+  Playwright). Owner decisions (data retention, backups, copy, SEO, majors) were left untouched.
+- Dependencies (same task, per `.claude/skills/dependency-upgrade`, OSV and web check per version): 18 WebUI npm packages
+  to their latest minor/patch (Playwright 1.65.0, Vite 8.3.8, Tailwind 4.3.5, TanStack Query 5.107.1, axios 1.21.1 with
+  the patched `follow-redirects`, i18next 26.7.2 and others), ASP.NET Core / EF Core 10.0.15 and `dotnet-ef` 10.0.15,
+  OpenTelemetry 1.21.0, libphonenumber-csharp 9.0.43 and Microsoft.NET.Test.Sdk 18.12.0. `npm audit` drops from 12 high
+  to 0. Waiting (younger than 7 days): AWSSDK.S3 4.1.2, SkiaSharp 4.157.0, QuestPDF 2026.9.2, Scalar.AspNetCore 2.21.0.
+  Deferred majors: i18next 27, react-i18next 18, @babel/core 8, Scalar 3, .NET 11 packages, Aspire 17.
+  Full `pre-push.py` gate green: 1419 unit tests, the full E2E suite, 2410 HTTP requests, 26 SQL scripts.
+  _Dev time: ~23 h 6 min wall-clock (2026-11-18 14:11 to 2026-11-19 13:18 +01:00, including the overnight wait for a
+  usage-limit reset). ~2.62M output tokens, $26-52 (sonnet-opus, output-token-only estimate, a lower bound)._
 - The production API's cold start no longer ends on `/500` (2026-11-16, owner decision): measured through `arsm.hu`, the first
   request after the API scaled to zero took 41.3 s (replica scheduling ~10-15 s, the 309 MB image pull ~8 s, container
   creation ~6 s, .NET start ~4 s, then up to 10 s until the next readiness probe), past the WebUI's 30 s request timeout. The
