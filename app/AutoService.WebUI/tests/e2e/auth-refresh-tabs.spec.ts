@@ -2,6 +2,7 @@
  * refreshes it: the other waits for the cross-tab lock, sees the rotated CSRF cookie and just retries. */
 import { setTimeout as sleep } from 'node:timers/promises';
 import { expect, test, type Page } from '@playwright/test';
+import { AUTH_CSRF_COOKIE_NAME } from '../../src/utils/browserStorageKeys';
 import { CustomersPage } from './pages/customers.page';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
@@ -12,7 +13,7 @@ const REFRESH_DURATION_MS = 1500;
 
 /** The CSRF cookie the API rotates on every refresh (host-scoped, so both tabs and the API origin share it). */
 function csrfCookie(value: string, baseUrl: string) {
-  return { name: '__Host-arsm-csrf-token', value, url: baseUrl, secure: true };
+  return { name: AUTH_CSRF_COOKIE_NAME, value, url: baseUrl, secure: true };
 }
 
 /** Signs the tab in with a session whose first customers read is refused once, and times its refresh. */

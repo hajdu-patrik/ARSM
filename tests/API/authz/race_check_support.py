@@ -52,11 +52,6 @@ def race(calls: list[Call], offsets: list[float] | None = None) -> Answers:
     return answers
 
 
-def race_same(clients: list[HttpClient], request: Callable[[HttpClient], tuple[int, str]]) -> Answers:
-    """Sends the same request from every session at once."""
-    return race([lambda client=client: request(client) for client in clients])
-
-
 def race_requests(clients: list[HttpClient], method: str, paths: list[str], bodies: list[Any]) -> Answers:
     """Session i sends bodies[i] to paths[i] at the same moment as the others."""
     return race([lambda i=i: clients[i].request_json(method, paths[i], bodies[i]) for i in range(len(clients))])

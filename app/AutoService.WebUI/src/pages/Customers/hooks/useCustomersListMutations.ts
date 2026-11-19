@@ -49,6 +49,7 @@ export function useCustomersListMutations() {
     queryKeys.customers.customerHistory(authScope, customerId),
     queryKeys.customers.vehicleHistory(authScope, vehicleId),
     queryKeys.scheduler.root(authScope),
+    queryKeys.quotes.root(authScope),
   ]), [refresh]);
 
   // The vehicle's quotes go with it, so the Quotes list and the revenue report must not keep them.

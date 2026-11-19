@@ -12,6 +12,7 @@ import {
   referenceChipPrimaryButtonClass,
   formFieldGroupClass,
 } from '../../../../utils/formStyles';
+import { appointmentStatusLabelKey } from '../../utils/appointmentStatusLabel';
 
 const STATUS_OPTIONS: AppointmentStatus[] = ['InProgress', 'Completed', 'Cancelled'];
 const STATUS_OPTIONS_SET = new Set<string>(STATUS_OPTIONS);
@@ -59,7 +60,7 @@ export const AppointmentDetailFooter = memo(function AppointmentDetailFooter({
   const { canComplete, canDelete } = appointment;
   const statusOptions = useMemo(() => STATUS_OPTIONS.map((status) => ({
     value: status,
-    label: t(`scheduler.status.${status.toLowerCase()}`),
+    label: t(appointmentStatusLabelKey(status)),
     disabled: status === 'Completed' && !canComplete,
   })), [t, canComplete]);
   // Completed is terminal: the server refuses any change away from it, so no status control is offered.

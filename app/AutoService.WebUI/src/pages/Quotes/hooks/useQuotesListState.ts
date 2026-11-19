@@ -1,4 +1,4 @@
-/** Quote list-state hook: one server-paged, server-searched read sized to the rows that fit; the status chip maps to the stored status. */
+/** Quote list state: one server-paged, server-searched read sized to the rows that fit, filtered by status chip. */
 import { useCallback, useRef, useState, type RefObject } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DEFAULT_MIN_PAGE_SIZE, useFittingPageSize } from '../../../hooks/useFittingPageSize';
@@ -58,7 +58,7 @@ interface QuotesListState {
 }
 
 /** The list state plus the ref of the element whose height sizes the page; kept apart so the state holds no ref. */
-export interface QuotesList {
+interface QuotesList {
   readonly list: QuotesListState;
   readonly listRef: RefObject<HTMLDivElement | null>;
 }

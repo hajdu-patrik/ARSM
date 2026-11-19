@@ -1,9 +1,8 @@
 /** Admin password reset on the roster: the action sits on non-admin rows only, the dialog needs 8 characters,
- * and the server's answers (success, policy refusals, 403, 404, mail not sent) reach the user. */
-import { expect, test, type Page } from '@playwright/test';
-import { installApiMocks } from './support/api-mocks';
+ * and the server's answers (success, policy refusals, 403, mail not sent) reach the user; a 404 is in admin-roster-not-found. */
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { AdminPage } from './pages/admin.page';
 import { fulfillJson } from './support/api-mock-response';
-import { primeBrowserState } from './support/browser-state';
 import { fillLockedPasswordField } from './support/password-fields';
 import { MOCK_MECHANIC_IDS, type MockApiState } from './support/test-data';
 import { errorToastMessage, toastMessage } from './support/toast';
@@ -12,15 +11,12 @@ const PETER_EMAIL = 'peter.nagy@example.com';
 
 /** Opens the roster as an admin; the fixture roster is one admin and three mechanics on a single page. */
 async function openRoster(page: Page): Promise<MockApiState> {
-  await primeBrowserState(page, { sessionHint: true });
-  const state = await installApiMocks(page, { profileEmail: 'admin.edge@example.test', isAuthenticated: true, isAdmin: true });
-  await page.goto('/admin/register');
-  await expect(page.locator('#reg-email')).toBeVisible();
+  const { state } = await AdminPage.open(page);
   return state;
 }
 
 /** Clicks Peter's reset action and returns the opened dialog. */
-async function openPeterReset(page: Page) {
+async function openPeterReset(page: Page): Promise<Locator> {
   await page.getByTestId(`mechanic-row-${String(MOCK_MECHANIC_IDS.peter)}`).getByRole('button', { name: 'Reset password' }).click();
   const dialog = page.getByRole('dialog', { name: 'Reset password' });
   await expect(dialog).toBeVisible();
@@ -138,20 +134,6 @@ test.describe('Admin password reset: more server answers', () => {
     await expect(toastMessage(page, `Temporary password set, but the e-mail could not be sent to ${PETER_EMAIL}; hand it over manually.`)).toBeVisible();
     await expect(errorToastMessage(page, /./)).toHaveCount(0);
     await expect(dialog).toHaveCount(0);
-  });
-
-  test('toasts a plain failure, with no field marked, when the mechanic is gone', async ({ page }) => {
-    const state = await openRoster(page);
-    const dialog = await openPeterReset(page);
-    state.mechanics.splice(state.mechanics.findIndex((mechanic) => mechanic.personId === MOCK_MECHANIC_IDS.peter), 1);
-
-    const field = dialog.getByLabel('Temporary password');
-    await fillLockedPasswordField(field, 'TempPass1!');
-    await dialog.getByRole('button', { name: 'Reset password' }).click();
-
-    await expect(errorToastMessage(page, 'Failed to reset the password.')).toBeVisible();
-    await expect(field).not.toHaveAttribute('aria-invalid', 'true');
-    await expect(dialog).toBeVisible();
   });
 
   test('Cancel and Escape close the dialog without a request, and it reopens with an empty field', async ({ page }) => {

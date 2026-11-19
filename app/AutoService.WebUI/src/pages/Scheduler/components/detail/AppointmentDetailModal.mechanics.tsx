@@ -222,6 +222,7 @@ const MechanicCard = memo(function MechanicCard({
             type="button"
             onClick={onRemove}
             disabled={isDisabled}
+            aria-label={isCurrentUser ? undefined : t('scheduler.detail.unassignOtherNamed', { name: mechanic.fullName })}
             className={schedulerInlineUnassignButtonClass}
           >
             <LogOut className={smallIconClass} />

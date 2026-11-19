@@ -29,7 +29,7 @@ arsm-migrate (Container Apps Job, manual trigger, the API image with --migrate-d
 | --- | --- | --- |
 | API image | `deploy/api.Dockerfile` | Debian-based ASP.NET runtime (QuestPDF needs glibc), port 8080, `Production`. |
 | Web image | `deploy/web.Dockerfile` + `deploy/nginx/` | `PUBLIC_URL` is baked into the bundle and its CSP; the CSP is repeated as a header with `frame-ancestors 'none'`. Inside the app it runs with `PORT=18080`. |
-| Gate image | `deploy/gate/` | The token gate of the local test instance; `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
+| Gate image | `deploy/gate/` | The token gate (also used by the kit of the removed local test instance); `GATE_MODE=azure` gates every request, reads the token from the `GATE_TOKEN` secret and logs to the console only. |
 | Registry | `deploy/azure/registry.bicep` | Azure Container Registry, Basic SKU, admin user disabled. |
 | Migration job | `deploy/azure/migration-job.bicep` | `arsm-migrate`: the API image started with `--migrate-database`, one replica, no retries, a 15-minute replica timeout. Connected as the administrator, it applies the migrations and the startup data checks, then creates or updates the login role `arsm_app` with DML rights only. The API itself no longer migrates (`Database__MigrateOnStartup=false`) and connects as `arsm_app`. |
 | Infrastructure | `deploy/azure/main.bicep`, `deploy/azure/postgres.bicep`, `deploy/azure/dataprotection.bicep`, `deploy/azure/migration-job.bicep`, `deploy/azure/guardrails.bicep`, `deploy/azure/budget.bicep`, `deploy/azure/main.bicepparam` | Reads its values from environment variables that the script exports from `.env`. |
@@ -158,7 +158,8 @@ Exit codes: 0 ok, 1 a step failed, 2 bad configuration or usage. Because images 
    `az provider show --namespace <name> --query registrationState -o tsv` until it says
    `Registered`): `az provider register --namespace Microsoft.App`, then the same for
    `Microsoft.OperationalInsights`, `Microsoft.DBforPostgreSQL`, `Microsoft.ContainerRegistry`,
-   `Microsoft.Storage` and `Microsoft.KeyVault` (the DataProtection key vault), plus `Microsoft.Insights` for the alert rules (and
+   `Microsoft.Storage`, `Microsoft.KeyVault` (the DataProtection key vault), `Microsoft.Communication`
+   (mail) and `Microsoft.ManagedIdentity`, plus `Microsoft.Insights` for the alert rules (and
    `Microsoft.Consumption` only if you switch the budget on). `deploy-azure.py check` warns when
    `Microsoft.KeyVault` or a provider of the guard rails you switched on is not registered; it needs `az login` for that.
 4. Install the Azure CLI (`winget install -e --id Microsoft.AzureCLI`) and run `az login`; make
@@ -199,7 +200,8 @@ Services resource and the custom role `ARSM Email Sender (<resource group>)` wit
 Microsoft documents, assigned to the pull identity on that resource only.
 
 1. Run `infra` with `ARSM_MAIL_DOMAIN_LINKED=false` (the default). The deployment output
-   `mailDomainRecords` lists the Domain (TXT), SPF (TXT), DKIM and DKIM2 (CNAME) records.
+   `mailDomainRecords` lists the Domain (TXT), SPF (TXT), DKIM and DKIM2 (CNAME) records; read it again with
+   `az deployment group show --resource-group <rg> --name <deployment> --query properties.outputs.mailDomainRecords.value`.
 2. Add them in Cloudflare (DNS only). The domain keeps a single SPF record: add
    `include:spf.protection.outlook.com` to the existing one instead of a second `v=spf1` record, and end
    it with `-all`; with `~all` the SPF check fails with `DnsRecordsNotMatched`. For arsm.hu (Cloudflare
@@ -215,7 +217,7 @@ Microsoft documents, assigned to the pull identity on that resource only.
    `DomainValidationError` and leaves the running apps unchanged. Send one quote to your own address to
    check it.
 
-Development and the local test instance pass no `Email__Endpoint`, so they never send mail.
+Development (and the local test instance, if its kit is set up again) pass no `Email__Endpoint`, so they never send mail.
 
 ### Rotating the gate token
 
@@ -273,10 +275,10 @@ page of the resource group in the portal shows `arsm-monthly-budget`.
   you own, run an occasional `pg_dump` against the server (allow your IP in the server firewall
   only for the time of the dump, then remove the rule).
 - Cost: PostgreSQL B1ms (32 GB) is on the Azure for Students free list for the first 12 months.
-  The always-on API replica, the Container Registry Basic SKU (a small daily fee) and the Log
-  Analytics workspace draw from the credit; the web app scales to zero by default
-  (`ARSM_WEB_ALWAYS_ON=false`). Check current prices; the budget under Guard rails below watches
-  the spend.
+  The API runs scale-to-zero in production (`ARSM_API_ALWAYS_ON=false`, cold start about 41 s), the
+  web app scales to zero by default (`ARSM_WEB_ALWAYS_ON=false`); the Container Registry Basic SKU
+  (a small daily fee) and the Log Analytics workspace draw from the credit. Check current prices.
+  Azure for Students has no budget, so nothing watches the spend automatically.
 - The API must never run more than one replica (in-process rate limiter); the template pins
   `maxReplicas: 1`.
 - The registry admin user is disabled: only the managed identity (`AcrPull`) pulls images, and

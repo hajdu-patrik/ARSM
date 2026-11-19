@@ -1,4 +1,4 @@
-/** Quotes page: search/status list plus the editor modal; creation always starts from a vehicle row (`?vehicleId=<id>&new=1`, see CLAUDE.md); `?quoteId=<id>` opens that quote. */
+/** Quotes page: search/status list plus the editor modal; `?vehicleId=<id>&new=1` creates, `?quoteId=<id>` opens. */
 import { memo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
@@ -21,6 +21,7 @@ import { QuoteEditorModal } from './components/QuoteEditorModal';
 import { DeleteQuoteModal } from './components/DeleteQuoteModal';
 import { QuoteCustomerEmailDialog } from './components/QuoteCustomerEmailDialog';
 
+/** Route component of `/quotes`: wires the list, editor, write and reference hooks to their views. */
 export const QuotesPage = memo(function QuotesPage() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,6 +34,7 @@ export const QuotesPage = memo(function QuotesPage() {
   const reference = useQuoteReferenceData({
     isOpen: editor.isOpen,
     vehicleId: editor.vehicleId,
+    quote: editor.quote,
     showErrorToast,
   });
 

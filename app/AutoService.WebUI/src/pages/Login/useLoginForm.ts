@@ -101,15 +101,24 @@ export function useLoginForm() {
 
   /** Sends the login request, then navigates home or toasts the failure; the password is cleared either way. */
   const attemptLogin = useCallback(async (validIdentifier: ValidIdentifier) => {
+    let failed = false;
     try {
       await authService.login(buildLoginRequest(validIdentifier, password));
       showSuccessToast('login.success');
       void navigate('/');
     } catch (error) {
+      failed = true;
       showLoginFailure(showErrorToast, resolveLoginError(error), loginMethod);
     } finally {
-      setPassword('');
-      setIsLoading(false);
+      // The input is disabled while loading, so it must be enabled in the DOM before it can take focus.
+      flushSync(() => {
+        setPassword('');
+        setIsLoading(false);
+      });
+    }
+
+    if (failed) {
+      passwordInputRef.current?.focus();
     }
   }, [loginMethod, navigate, password, showErrorToast, showSuccessToast]);
 

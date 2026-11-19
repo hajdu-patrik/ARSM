@@ -10,6 +10,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    /** Creates an in-progress appointment for one of the customer's vehicles with the given mechanics. */
     private static async Task<IResult> CreateForCustomerAsync(
         int customerId,
         CreateCustomerAppointmentRequest request,
@@ -36,7 +37,6 @@ public static partial class AppointmentEndpoints
         }
 
         var vehicle = await db.Vehicles
-            .Include(v => v.Customer)
             .FirstOrDefaultAsync(v => v.Id == request.VehicleId, cancellationToken);
 
         if (vehicle is null)
@@ -69,11 +69,12 @@ public static partial class AppointmentEndpoints
 
         logger.LogInformation("CreateForCustomer created appointment {AppointmentId} for customer {CustomerId}.", appointment.Id, customerId);
 
-        PublishAppointmentChanged(broadcaster, appointment.Id);
+        broadcaster.PublishAppointmentChanged(appointment.Id);
 
         return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
 
+    /** Returns the 422 for an invalid request, else null with the trimmed description and distinct mechanic ids. */
     private static IResult? ValidateCreateForCustomerRequest(
         CreateCustomerAppointmentRequest request,
         out string taskDescription,

@@ -1,9 +1,13 @@
 using Azure;
 using Azure.Communication.Email;
+using Azure.Identity;
 using AutoService.ApiService.Email.Sending;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using AutoService.UnitTests.Security;
 using ArsmAttachment = AutoService.ApiService.Email.EmailAttachment;
 using ArsmMessage = AutoService.ApiService.Email.EmailMessage;
+using ArsmResult = AutoService.ApiService.Email.EmailSendResult;
 
 namespace AutoService.UnitTests.Email;
 
@@ -117,12 +121,63 @@ public sealed class AzureCommunicationEmailSenderTests
     }
 
     [Fact]
+    public async Task SendAsync_treats_a_network_timeout_cancellation_as_retryable_and_logs_a_warning()
+    {
+        var client = new FakeEmailClient { Failure = new TaskCanceledException("network timeout") };
+        var logger = new RecordingLogger<AzureCommunicationEmailSender>();
+
+        var result = await new AzureCommunicationEmailSender(client, Settings, logger).SendAsync(Message, CancellationToken.None);
+
+        AssertRetryableUnreachable(result, logger);
+    }
+
+    [Fact]
+    public async Task SendAsync_treats_a_plain_cancellation_with_a_live_caller_token_as_retryable()
+    {
+        var client = new FakeEmailClient { Failure = new OperationCanceledException("network timeout") };
+        var logger = new RecordingLogger<AzureCommunicationEmailSender>();
+
+        var result = await new AzureCommunicationEmailSender(client, Settings, logger).SendAsync(Message, CancellationToken.None);
+
+        AssertRetryableUnreachable(result, logger);
+    }
+
+    [Fact]
+    public async Task SendAsync_treats_a_failed_token_fetch_as_retryable_and_logs_a_warning()
+    {
+        var client = new FakeEmailClient { Failure = new AuthenticationFailedException("managed identity unavailable") };
+        var logger = new RecordingLogger<AzureCommunicationEmailSender>();
+
+        var result = await new AzureCommunicationEmailSender(client, Settings, logger).SendAsync(Message, CancellationToken.None);
+
+        AssertRetryableUnreachable(result, logger);
+    }
+
+    [Fact]
+    public async Task SendAsync_lets_the_callers_own_cancellation_propagate()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var client = new FakeEmailClient { Failure = new OperationCanceledException(cts.Token) };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Sender(client).SendAsync(Message, cts.Token));
+    }
+
+    [Fact]
     public void CreateOptions_makes_a_single_attempt_within_the_timeout()
     {
         var options = EmailServiceCollectionExtensions.CreateOptions();
 
         Assert.Equal(0, options.Retry.MaxRetries);
         Assert.Equal(TimeSpan.FromSeconds(EmailServiceCollectionExtensions.SendTimeoutSeconds), options.Retry.NetworkTimeout);
+    }
+
+    private static void AssertRetryableUnreachable(ArsmResult result, RecordingLogger logger)
+    {
+        Assert.False(result.Sent);
+        Assert.Null(result.StatusCode);
+        Assert.True(result.Retryable);
+        Assert.Equal(LogLevel.Warning, Assert.Single(logger.Entries).Level);
     }
 
     private static AzureCommunicationEmailSender Sender(EmailClient client) =>
@@ -135,7 +190,7 @@ public sealed class AzureCommunicationEmailSenderTests
 
         public WaitUntil? LastWait { get; private set; }
 
-        public RequestFailedException? Failure { get; init; }
+        public Exception? Failure { get; init; }
 
         public override Task<EmailSendOperation> SendAsync(WaitUntil wait, EmailMessage message, CancellationToken cancellationToken = default)
         {

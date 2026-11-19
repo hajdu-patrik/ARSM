@@ -145,8 +145,10 @@ class SqlSuiteTests(TempDirCase):
         self.assertEqual((result.status, result.return_code, result.details["total"], result.details["failed"]), ("passed", 0, 2, 0))
         self.assertEqual([item["path"] for item in result.details["files"]],
                          ["tests/Database/a-first.sql", "tests/Database/b-second.sql"])
-        name, command, cwd, _, input_text = calls[0]
-        self.assertEqual(command[:5], ["docker", "exec", "-i", "-e", f"PGPASSWORD={password}"])
+        name, command, cwd, child_environment, input_text = calls[0]
+        self.assertEqual(child_environment["PGPASSWORD"], password)
+        self.assertNotIn(password, command)
+        self.assertEqual(command[:5], ["docker", "exec", "-i", "-e", "PGPASSWORD"])
         self.assertEqual(command[5:], ["box", "psql", "-U", "reader", "-h", "localhost", "-d", "db1", "-v", "ON_ERROR_STOP=1", "-q", "-f", "-"])
         self.assertEqual((name, cwd, input_text), ("sql", self.tmp, "select 1;"))
 

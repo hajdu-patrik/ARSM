@@ -1,10 +1,8 @@
 /** Search match highlight (letters only, no background or weight) and the search magnifier icon on Inventory and Quotes. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
+import { signInWithMocks } from './support/sign-in';
 
 interface TextStyle {
   readonly color: string;
@@ -49,11 +47,9 @@ async function expectMagnifierVisible(input: Locator): Promise<void> {
 
 async function bootCatalog(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 1000 });
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
+  const state = await signInWithMocks(page);
   // The part number matches the search letter for letter, so the server returns the row whose name carries the accents.
   state.parts.push({ id: 3900, partNumber: 'FEKBETET-1', name: 'Fékbetét készlet', netUnitPrice: 5000, vatRatePercent: 27, grossUnitPrice: 6350, version: 1 });
-  await new AuthPage(page).loginAsMechanic(env);
 }
 
 test.describe('Search highlight - parts', () => {
@@ -125,9 +121,7 @@ test.describe('Search highlight - quotes', () => {
   test.use({ viewport: { width: 1280, height: 1000 } });
 
   test('colors only the matching letters of the title', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
     const quotes = new QuotesPage(page);
     await quotes.goto();
 
@@ -137,9 +131,7 @@ test.describe('Search highlight - quotes', () => {
   });
 
   test('colors a matching quote number against its uncolored form', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
     const quotes = new QuotesPage(page);
     await quotes.goto();
     const number = quotes.row('ARSM-2026-0001').getByText('ARSM-2026-0001', { exact: true });
@@ -169,9 +161,7 @@ test.describe('Search magnifier icon', () => {
   });
 
   test('stays visible on Quotes when the field is focused and holds text', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
     const quotes = new QuotesPage(page);
     await quotes.goto();
 

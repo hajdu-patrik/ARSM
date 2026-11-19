@@ -25,14 +25,9 @@ export function useCustomerDetailsPanel() {
     });
   }, []);
 
-  const closePanel = useCallback(() => {
-    setTarget(null);
-  }, []);
-
   return {
     target,
     openCustomerPanel,
     openVehiclePanel,
-    closePanel,
   };
 }

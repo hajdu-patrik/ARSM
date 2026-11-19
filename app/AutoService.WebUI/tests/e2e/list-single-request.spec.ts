@@ -1,12 +1,10 @@
 /** Every paged list sends exactly one list request on page entry, sized to the rows it then shows,
  * and never sends an empty `search=` parameter. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
-import { installApiMocks } from './support/api-mocks';
-import { getAppointmentFlowEnv } from './support/e2e-env';
+import { signInWithMocks } from './support/sign-in';
 import { MOCK_QUOTE_IDS, type MockApiState } from './support/test-data';
 import { recordGetRequests } from './support/request-log';
 
@@ -116,13 +114,10 @@ const LIST_CASES: readonly ListCase[] = [
   },
 ];
 
-/** Mocks the API, seeds the list and signs in; the viewport is fixed so the page size is stable. */
+/** Mocks the API, signs in and seeds the list (read when its page opens); the viewport is fixed so the page size is stable. */
 async function bootPage(page: Page, seed: (state: MockApiState) => void): Promise<void> {
   await page.setViewportSize(VIEWPORT);
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  seed(state);
-  await new AuthPage(page).loginAsMechanic(env);
+  seed(await signInWithMocks(page));
 }
 
 /** Lets the frame-scheduled re-measure and a late debounced fetch happen, so an extra request is seen. */

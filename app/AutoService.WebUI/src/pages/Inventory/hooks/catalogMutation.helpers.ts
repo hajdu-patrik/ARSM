@@ -44,6 +44,11 @@ export function buildCatalogValues(form: CatalogFormState): CatalogRequestResult
   };
 }
 
+/** True when the server answered 404: the item was deleted after the list was loaded. */
+export function isCatalogItemGone(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 404;
+}
+
 /** Maps a rejected part/labor-type write to the i18n key of the message to show, or `fallbackKey` when the server named none. */
 export function resolveCatalogSaveErrorKey(error: unknown, fallbackKey: string): string {
   if (!isAxiosError<ServerErrorBody>(error)) {

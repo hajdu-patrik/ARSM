@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StatusPillBadge } from '../../../../components/common/StatusPillBadge';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { toneBadgeClasses, toneDotClasses } from '../../../../utils/formStyles';
+import { appointmentStatusLabelKey } from '../../utils/appointmentStatusLabel';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 
 interface StatusBadgeProps {
@@ -11,12 +12,7 @@ interface StatusBadgeProps {
   readonly className?: string;
 }
 
-const STATUS_I18N_KEY: Record<AppointmentStatus, string> = {
-  InProgress: 'scheduler.status.inprogress',
-  Completed: 'scheduler.status.completed',
-  Cancelled: 'scheduler.status.cancelled',
-};
-
+/** Status pill of one appointment, rendered through the shared `StatusPillBadge` shell. */
 export const StatusBadge = memo(function StatusBadge({ status, className = '' }: StatusBadgeProps) {
   const { t } = useTranslation();
   const tone = APPOINTMENT_STATUS_TONE[status];
@@ -26,7 +22,7 @@ export const StatusBadge = memo(function StatusBadge({ status, className = '' }:
       testId="appointment-status-badge"
       colorClassName={toneBadgeClasses[tone]}
       dotClassName={toneDotClasses[tone]}
-      label={t(STATUS_I18N_KEY[status])}
+      label={t(appointmentStatusLabelKey(status))}
       className={className}
     />
   );

@@ -19,6 +19,7 @@ public static partial class QuoteEndpoints
         CancellationToken cancellationToken)
     {
         var quote = await IncludeDetails(db.Quotes.AsNoTracking())
+            .Include(q => q.Vehicle).ThenInclude(v => v.Customer)
             .FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
 
         if (quote is null)
@@ -125,6 +126,7 @@ public static partial class QuoteEndpoints
             quote.TotalGross);
     }
 
+    /** Maps the lines of one kind to document rows, with the catalog identifier when it is known. */
     private static List<QuoteDocumentLine> ToDocumentLines(
         IEnumerable<QuoteLine> lines,
         QuoteLineKind lineKind,
@@ -151,6 +153,7 @@ public static partial class QuoteEndpoints
             .ToList();
     }
 
+    /** Sums the stored net and VAT amounts per VAT rate, ordered by rate. */
     private static List<QuoteDocumentVatRow> ToVatBreakdown(IEnumerable<QuoteLine> lines)
     {
         return lines

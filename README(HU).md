@@ -42,13 +42,14 @@ English version: [README.md](README.md)
 
 ## Helyi futtatás
 
-Előfeltételek: .NET 10 SDK, Node.js 24+, Python 3.11+, Docker Desktop.
+Előfeltételek: .NET 10 SDK, Node.js 24+, Python 3.12+, Docker Desktop.
 
 1. Másold az `app/AutoService.ApiService/appsettings.Local.template.json` fájlt `appsettings.Local.json` néven (gitignore-olt),
    és töltsd ki: `JwtSettings.Secret`, `ConnectionStrings.AutoServiceDb`, `CompanyProfile.*` (az árajánlat fejlécének
    kezdőértéke), opcionálisan `Bootstrap.Admin.*` (az első admin üres adatbázison; más adatot az API nem tölt be).
 2. Az objektumtár titkait egyszer kell beállítani az `app/AutoService.AppHost` mappában:
-   `dotnet user-secrets set "Parameters:minio-user" "<felhasználó>"` és `"Parameters:minio-password" "<jelszó>"`.
+   `dotnet user-secrets set "Parameters:minio-user" "<felhasználó>"` és `"Parameters:minio-password" "<jelszó>"`; a `"Parameters:postgres-password"` és a `"Parameters:jwt-secret"` értékét
+   ugyanígy kell beállítani.
 3. Telepítés és indítás:
 
 ```bash
@@ -88,12 +89,12 @@ pusszal véget ér.
 
 1. **Fejlesztés és ellenőrzés.** Helyi ágon dolgozol, lefuttatod a `python scripts/validate.py`-t, beírod a
    `CHANGELOG.md` bejegyzést, majd a commit a `main`-re kerül. A távoli repóban csak a `main` létezik.
-2. **Push = tesztkiadás.** A `git push origin main` előbb lefuttatja a push előtti kaput (validate, backend, frontend,
-   E2E, HTTP- és SQL-tesztek eldobható konténereken). A push után a tesztcsomag ütemezett feladata
-   (`deploy/local-test/deploy.py`, 5 percenként) észreveszi az új commitot, menti a tesztadatbázist, a commitból
-   (`git archive`) megépíti az API- és a webes képet, újraindítja a két alkalmazáskonténert, és megvárja, hogy a `/` és
-   az `/alive` válaszoljon. Az új migrációkat az API induláskor alkalmazza, így pár percen belül az új verzió fut a
-   tesztpéldányon.
+2. **Push.** A `git push origin main` előbb lefuttatja a push előtti kaput (validate, backend, frontend,
+   E2E, HTTP- és SQL-tesztek eldobható konténereken). Ha a tesztpéldány újra fel van állítva, a csomagjának ütemezett
+   feladata (`deploy/local-test/deploy.py`, 5 percenként) ezután észreveszi az új commitot, menti a tesztadatbázist, a
+   commitból (`git archive`) megépíti az API- és a webes képet, újraindítja a két alkalmazáskonténert, és megvárja, hogy
+   a `/` és az `/alive` válaszoljon. Az új migrációkat az API induláskor alkalmazza, így pár percen belül az új verzió
+   fut azon a példányon.
 3. **Éles kiadás.** Ha minden rendben (a tesztpéldányon ellenőrizve, ha van felállítva), abból a klónból, amelyben az éles `.env` van (előtte
    `az login`): `python scripts/deploy-azure.py release --commit <sha>`. Megépíti és feltölti a commit szerint
    címkézett három képet, lefuttatja az `arsm-migrate` jobot (migrációk és az `arsm_app` szerepkör), és csak ennek

@@ -1,18 +1,18 @@
-/** Active tab of the Inventory page (kept in the `?tab=` URL parameter) plus the ARIA tabs wiring: element ids and arrow-key roving focus. */
+/** Active Inventory tab (kept in `?tab=`) plus the ARIA tabs wiring: element ids and arrow-key roving focus. */
 import { useCallback, useId, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useSearchParams } from 'react-router';
 
 /** Inventory tabs in tab order; each id is also its `?tab=` value. */
 export const INVENTORY_TABS = ['parts', 'labor-types'] as const;
 
-export type InventoryTab = (typeof INVENTORY_TABS)[number];
+type InventoryTab = (typeof INVENTORY_TABS)[number];
 
 export const INVENTORY_TAB_LABEL_KEYS: Readonly<Record<InventoryTab, string>> = {
   parts: 'inventory.tabs.parts',
   'labor-types': 'inventory.tabs.laborTypes',
 };
 
-export interface InventoryTabs {
+interface InventoryTabs {
   readonly activeTab: InventoryTab;
   /** Id of the page heading that labels the tab list. */
   readonly headingId: string;
@@ -47,6 +47,7 @@ function resolveTabKeyTarget(key: string, current: InventoryTab): InventoryTab |
   }
 }
 
+/** Reads the active tab from the URL and returns the ARIA ids and handlers of the tab strip. */
 export function useInventoryTabs(): InventoryTabs {
   const [searchParams, setSearchParams] = useSearchParams();
   const idPrefix = useId();

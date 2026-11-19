@@ -6,6 +6,14 @@ namespace AutoService.ApiService.Auth.Security;
     profile deletion answer a locked-out account 429; login only gets pass/fail, so the lockout stays unobservable. */
 internal static class PasswordCheck
 {
+    // One fixed dummy hash gives the paths that skip the real check a verification cost comparable to it.
+    private static readonly Lazy<string> DummyPasswordHash = new(() =>
+        new PasswordHasher<IdentityUser>().HashPassword(new IdentityUser(), "Dummy-Password-For-Timing-Parity-0000"));
+
+    /** Runs a verification that always fails, so the unknown-identifier and locked-out paths cost like a real check. */
+    internal static void VerifyDummyPassword(string password) =>
+        _ = new PasswordHasher<IdentityUser>().VerifyHashedPassword(new IdentityUser(), DummyPasswordHash.Value, password);
+
     /** Login check: counts failures toward the lockout, but a locked-out account is just a failure (never a 429). */
     internal static async Task<bool> VerifyForLoginAsync(
         SignInManager<IdentityUser> signInManager,
@@ -13,6 +21,13 @@ internal static class PasswordCheck
         string password)
     {
         var signInResult = await signInManager.CheckPasswordSignInAsync(identityUser, password, lockoutOnFailure: true);
+        if (signInResult.IsLockedOut)
+        {
+            // A locked-out account skips the real hash check, so the dummy keeps its timing equal.
+            VerifyDummyPassword(password);
+            return false;
+        }
+
         return signInResult.Succeeded;
     }
 

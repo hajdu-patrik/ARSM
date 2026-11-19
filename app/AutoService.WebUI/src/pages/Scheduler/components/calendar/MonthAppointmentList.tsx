@@ -19,6 +19,8 @@ interface MonthAppointmentListProps {
   readonly currentMechanicId: number | undefined;
   readonly isAdmin: boolean;
   readonly selectedDay: number | null;
+  /** The page clock (ms) handed to the cards' due state. */
+  readonly now: number;
   readonly onClaim: (id: number) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onCardClick: (appointment: AppointmentDto) => void;
@@ -48,12 +50,13 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
   currentMechanicId,
   isAdmin,
   selectedDay,
+  now,
   onClaim,
   onUnclaim,
   onCardClick,
   onClearFilter,
 }: MonthAppointmentListProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [selectedStatuses, setSelectedStatuses] = useState<Set<AppointmentStatus>>(new Set());
   const [selectedMechanicId, setSelectedMechanicId] = useState<number | null>(null);
@@ -86,8 +89,8 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
       }
     }
 
-    return Array.from(mechanicNameById.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [appointments]);
+    return Array.from(mechanicNameById.entries()).sort((a, b) => a[1].localeCompare(b[1], i18n.language));
+  }, [appointments, i18n.language]);
 
   const dayAppointments = useMemo(() => {
     if (selectedDay === null) {
@@ -97,7 +100,9 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
     return appointments.filter((a) => new Date(a.scheduledDate).getDate() === selectedDay);
   }, [appointments, selectedDay]);
 
-  const hasActiveFilter = selectedStatuses.size > 0 || selectedMechanicId !== null;
+  // A mechanic picked in another month is ignored here, so the list never filters by an option the select does not offer.
+  const activeMechanicId = uniqueMechanics.some(([id]) => id === selectedMechanicId) ? selectedMechanicId : null;
+  const hasActiveFilter = selectedStatuses.size > 0 || activeMechanicId !== null;
 
   const filteredAppointments = useMemo(() => {
     let result = dayAppointments;
@@ -106,12 +111,12 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
       result = result.filter((a) => selectedStatuses.has(a.status));
     }
 
-    if (selectedMechanicId !== null) {
-      result = result.filter((a) => a.mechanics.some((m) => m.id === selectedMechanicId));
+    if (activeMechanicId !== null) {
+      result = result.filter((a) => a.mechanics.some((m) => m.id === activeMechanicId));
     }
 
     return result;
-  }, [dayAppointments, selectedStatuses, selectedMechanicId]);
+  }, [dayAppointments, selectedStatuses, activeMechanicId]);
 
   const sortedAppointments = useMemo(() => {
     const sorted = [...filteredAppointments];
@@ -129,7 +134,7 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
   let listContent: ReactNode;
   if (isLoading) {
     listContent = (
-      <div className={centeredLoadingWrapperClass}>
+      <div role="status" aria-label={t('scheduler.loading')} className={centeredLoadingWrapperClass}>
         <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
       </div>
     );
@@ -148,11 +153,10 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
             appointment={appointment}
             currentMechanicId={currentMechanicId}
             isAdmin={isAdmin}
+            now={now}
             onClaim={onClaim}
             onUnclaim={onUnclaim}
-            onClick={() => {
-              onCardClick(appointment);
-            }}
+            onCardClick={onCardClick}
           />
         ))}
       </div>
@@ -185,7 +189,7 @@ export const MonthAppointmentList = memo(function MonthAppointmentList({
         <MonthAppointmentFilters
           selectedStatuses={selectedStatuses}
           uniqueMechanics={uniqueMechanics}
-          selectedMechanicId={selectedMechanicId}
+          selectedMechanicId={activeMechanicId}
           onToggleStatus={toggleStatus}
           onMechanicChange={setSelectedMechanicId}
         />

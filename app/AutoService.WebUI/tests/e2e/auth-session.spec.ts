@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { CustomersPage } from './pages/customers.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
 import { installApiMocks } from './support/api-mocks';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 import { primeBrowserState } from './support/browser-state';
+import { signInWithMocks } from './support/sign-in';
 import { getTokenLikeStorageKeys } from './support/token-storage';
 
 test.describe('Auth session security flows', () => {
@@ -44,21 +44,19 @@ test.describe('Auth session security flows', () => {
     await page.goto('/customers');
 
     await expect(page).toHaveURL(/\/login$/);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
+    const sessionHint = await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY);
     expect(sessionHint).toBeNull();
   });
 
   test('does not persist token-like storage keys after login or logout', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
 
     expect(await getTokenLikeStorageKeys(page)).toEqual([]);
 
     await page.getByRole('button', { name: /Log out|Kijelentkezés/i }).click();
 
     await expect(page).toHaveURL(/\/login$/);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
+    const sessionHint = await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY);
     expect(sessionHint).toBeNull();
     expect(await getTokenLikeStorageKeys(page)).toEqual([]);
   });

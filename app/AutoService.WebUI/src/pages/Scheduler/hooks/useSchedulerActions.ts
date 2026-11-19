@@ -13,11 +13,9 @@ import { readErrorCode } from '../../../services/http/error-code';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import { useToastStore } from '../../../store/toast.store';
 import type {
-  AppointmentDto,
   AppointmentStatus,
   SchedulerCreateIntakeRequest,
   UpdateAppointmentRequest,
-  UpdateAppointmentVehicleRequest,
 } from '../../../types/scheduler/scheduler.types';
 import { settle } from './settle';
 import { useAppointmentMutation } from './useAppointmentMutation';
@@ -34,11 +32,10 @@ interface StatusChange {
   readonly version: number;
 }
 
-/** Variables of the update mutation; the vehicle details are saved after the appointment fields. */
+/** Variables of the update mutation. */
 interface AppointmentUpdate {
   readonly id: number;
   readonly request: UpdateAppointmentRequest;
-  readonly vehicleRequest: UpdateAppointmentVehicleRequest | undefined;
 }
 
 /** Server codes that mean the unassign lost a race with another change. */
@@ -87,13 +84,6 @@ function resolveDeleteErrorKey(error: unknown): string {
     : 'scheduler.detail.deleteError';
 }
 
-/** Saves the appointment fields, then the vehicle details when given; resolves with the last saved state. */
-async function updateWithOptionalVehicle({ id, request, vehicleRequest }: AppointmentUpdate): Promise<AppointmentDto> {
-  const updated = await appointmentService.updateAppointment(id, request);
-
-  return vehicleRequest === undefined ? updated : appointmentService.updateAppointmentVehicle(id, vehicleRequest);
-}
-
 /** Claim, unclaim and admin assignment handlers; a failure is toasted and never rejects. */
 function useAssignmentActions() {
   const { mutateAsync: claim } = useAppointmentMutation({
@@ -131,7 +121,7 @@ function useAssignmentActions() {
   return { handleClaim, handleUnclaim, handleAdminAssign, handleAdminUnassign };
 }
 
-/** Status, intake and update handlers; the status and update failures are toasted, the intake one rejects to its form. */
+/** Status, intake and update handlers; the status failure is toasted and swallowed, the intake and update ones also reject to their callers. */
 function useEditActions() {
   const { mutateAsync: changeStatus } = useAppointmentMutation({
     mutationFn: ({ id, status, version }: StatusChange) => appointmentService.updateStatus(id, { status, version }),
@@ -146,10 +136,9 @@ function useEditActions() {
     cacheOptions: () => ({ invalidateCustomerRegistry: true }),
   });
   const { mutateAsync: updateAppointment } = useAppointmentMutation({
-    mutationFn: updateWithOptionalVehicle,
+    mutationFn: ({ id, request }: AppointmentUpdate) => appointmentService.updateAppointment(id, request),
     successKey: 'scheduler.detail.updateSuccess',
     failureKey: 'scheduler.detail.updateError',
-    cacheOptions: ({ vehicleRequest }) => ({ invalidateCustomerRegistry: vehicleRequest !== undefined }),
   });
 
   const handleStatusChange = useCallback(
@@ -159,12 +148,8 @@ function useEditActions() {
   const handleCreateIntake = useCallback(async (request: SchedulerCreateIntakeRequest) => {
     await createIntake(request);
   }, [createIntake]);
-  const handleUpdateAppointment = useCallback(async (
-    id: number,
-    request: UpdateAppointmentRequest,
-    vehicleRequest?: UpdateAppointmentVehicleRequest,
-  ) => {
-    await updateAppointment({ id, request, vehicleRequest });
+  const handleUpdateAppointment = useCallback(async (id: number, request: UpdateAppointmentRequest) => {
+    await updateAppointment({ id, request });
   }, [updateAppointment]);
 
   return { handleStatusChange, handleCreateIntake, handleUpdateAppointment };

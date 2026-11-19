@@ -66,7 +66,8 @@ public static partial class AdminEndpoints
         var unitResult = await db.ExecuteInTransactionAsync(
             (transaction, token) =>
                 SaveResetRevocationAsync(mechanic.Id, identityUserId, cutoffUtc, userManager, db, transaction, token),
-            cancellationToken);
+            // The password is already reset, so an aborted request must not skip the revocation.
+            CancellationToken.None);
         if (!unitResult.Succeeded)
         {
             return Results.ValidationProblem(unitResult.ToValidationErrors(fallbackKey: "TemporaryPassword"));

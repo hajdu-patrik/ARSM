@@ -9,6 +9,7 @@ import type { MockApiState } from './support/test-data';
 const COLLAPSED_WIDTH_PX = 68;
 const EXPANDED_WIDTH_PX = 256;
 
+/** Boots the app with a restorable session under the given mock options and waits for `<main>`. */
 async function openApp(page: Page, options: Partial<InstallApiMockOptions> = {}, path = '/'): Promise<MockApiState> {
   await primeBrowserState(page, { sessionHint: true });
   const state = await installApiMocks(page, { profileEmail: 'shell.sidebar@example.test', ...options });
@@ -50,6 +51,18 @@ test.describe('Sidebar links', () => {
     await expect(page).toHaveURL(/\/customers$/);
     await expect(customers).toHaveAttribute('aria-current', 'page');
     await expect(desktopSidebar(page).getByRole('link', { name: 'Quotes' })).not.toHaveAttribute('aria-current', 'page');
+  });
+
+  test('the Scheduler link points at the root route and is the current page there only', async ({ page }) => {
+    await openApp(page);
+    const scheduler = desktopSidebar(page).getByRole('link', { name: 'Scheduler' });
+
+    await expect(scheduler).toHaveAttribute('href', '/');
+    await expect(scheduler).toHaveAttribute('aria-current', 'page');
+
+    await desktopSidebar(page).getByRole('link', { name: 'Customers' }).click();
+    await expect(page).toHaveURL(/\/customers$/);
+    await expect(scheduler).not.toHaveAttribute('aria-current', 'page');
   });
 
   test('the shell language switch translates the sidebar and keeps the page', async ({ page }) => {
@@ -126,6 +139,10 @@ test.describe('Phone drawer at 320px', () => {
     await openMenu.click();
     await expect(openMenu).toHaveAttribute('aria-expanded', 'true');
     await expect(drawerNav.getByRole('link', { name: 'Customers' })).toBeVisible();
+    const hasNoHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    );
+    expect(hasNoHorizontalOverflow).toBe(true);
 
     await drawerNav.getByRole('link', { name: 'Customers' }).click();
     await expect(page).toHaveURL(/\/customers$/);

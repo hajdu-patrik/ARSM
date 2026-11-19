@@ -2,38 +2,26 @@ using AutoService.ApiService.Normalization;
 
 namespace AutoService.ApiService.Validation;
 
+/** Validates person name fields and maps each failure to its shared validation message. */
 internal static class NameFieldsValidator
 {
-    /** Validates first/middle/last names into the errors dict; only validates non-empty values, requireFirstName/requireLastName control required-field errors. */
+    /** Validates the non-empty first/middle/last names into the errors dict; empty values are not an error here. */
     internal static void ValidateNames(
         string? firstName,
         string? middleName,
         string? lastName,
-        Dictionary<string, string[]> errors,
-        bool requireFirstName = false,
-        bool requireLastName = false)
+        Dictionary<string, string[]> errors)
     {
-        if (requireFirstName && string.IsNullOrWhiteSpace(firstName))
-        {
-            errors["FirstName"] = [ValidationMessages.FirstNameRequired];
-        }
-        else if (!string.IsNullOrWhiteSpace(firstName) && !ContactNormalization.IsValidName(firstName.Trim()))
-        {
-            errors["FirstName"] = [ValidationMessages.InvalidFirstName];
-        }
+        AddErrorWhenInvalid(firstName, "FirstName", ValidationMessages.InvalidFirstName, errors);
+        AddErrorWhenInvalid(lastName, "LastName", ValidationMessages.InvalidLastName, errors);
+        AddErrorWhenInvalid(middleName, "MiddleName", ValidationMessages.InvalidMiddleName, errors);
+    }
 
-        if (requireLastName && string.IsNullOrWhiteSpace(lastName))
+    private static void AddErrorWhenInvalid(string? value, string field, string message, Dictionary<string, string[]> errors)
+    {
+        if (!string.IsNullOrWhiteSpace(value) && !ContactNormalization.IsValidName(value.Trim()))
         {
-            errors["LastName"] = [ValidationMessages.LastNameRequired];
-        }
-        else if (!string.IsNullOrWhiteSpace(lastName) && !ContactNormalization.IsValidName(lastName.Trim()))
-        {
-            errors["LastName"] = [ValidationMessages.InvalidLastName];
-        }
-
-        if (!string.IsNullOrWhiteSpace(middleName) && !ContactNormalization.IsValidName(middleName.Trim()))
-        {
-            errors["MiddleName"] = [ValidationMessages.InvalidMiddleName];
+            errors[field] = [message];
         }
     }
 

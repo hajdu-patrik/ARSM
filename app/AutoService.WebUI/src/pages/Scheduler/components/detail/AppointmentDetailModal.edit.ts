@@ -6,7 +6,7 @@ import type {
 import { toDatetimeLocalValue } from '../../utils/due-date';
 
 /** The validated update payload built from the edit form. */
-export interface UpdateEditFormResult {
+interface UpdateEditFormResult {
   appointment: UpdateAppointmentRequest;
 }
 

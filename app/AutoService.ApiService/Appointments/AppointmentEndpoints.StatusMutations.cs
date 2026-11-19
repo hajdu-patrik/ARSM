@@ -12,6 +12,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    /** Changes the status of an appointment the caller is assigned to, under the submitted version. */
     private static async Task<IResult> UpdateStatusAsync(
         int id,
         UpdateStatusRequest request,
@@ -77,7 +78,7 @@ public static partial class AppointmentEndpoints
 
         logger.LogInformation("UpdateStatus succeeded for appointment {AppointmentId}; new status {Status}.", id, newStatus);
 
-        PublishAppointmentChanged(broadcaster, appointment.Id);
+        broadcaster.PublishAppointmentChanged(appointment.Id);
 
         return Results.Ok(ToDto(appointment));
     }

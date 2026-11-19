@@ -3,6 +3,7 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
+import { APP_ROUTE_PATHS } from '../../router/appRoutes';
 import { useAuthStore } from '../../store/auth.store';
 import { useToastStore } from '../../store/toast.store';
 import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
@@ -104,7 +105,7 @@ const CustomersPageComponent = memo(function CustomersPage() {
   // A quote is anchored to a vehicle, so the vehicle row starts one, and the
   // Quotes page owns the editor from there.
   const handleCreateQuoteForVehicle = useCallback((vehicleId: number) => {
-    void navigate(`/quotes?vehicleId=${String(vehicleId)}&new=1`);
+    void navigate(`${APP_ROUTE_PATHS.quotes}?vehicleId=${String(vehicleId)}&new=1`);
   }, [navigate]);
 
   const handleCloseHistoryAppointment = useCallback(() => {

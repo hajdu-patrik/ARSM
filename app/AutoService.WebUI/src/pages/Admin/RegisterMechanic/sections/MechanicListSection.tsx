@@ -14,195 +14,195 @@ import { MECHANIC_LIST_PAGE_SIZE } from '../constants';
 import { MechanicListToolbar } from './MechanicListToolbar';
 import { MechanicPasswordResetModal } from './MechanicPasswordResetModal';
 import {
-	centeredLoadingWrapperClass,
-	compactInputSurfaceClass,
-	compactListPrimaryWrapTextClass,
-	compactListSecondaryTextClass,
-	defaultIconClass,
-	emptyStateBoxClass,
-	loadingSpinnerClass,
-	mutedBodyTextClass,
-	rowHoverMotionClass,
+  centeredLoadingWrapperClass,
+  compactInputSurfaceClass,
+  compactListPrimaryWrapTextClass,
+  compactListSecondaryTextClass,
+  defaultIconClass,
+  emptyStateBoxClass,
+  loadingSpinnerClass,
+  mutedBodyTextClass,
+  rowHoverMotionClass,
 } from '../../../../utils/formStyles';
 import { mechanicDangerIconButtonClass, mechanicWarningIconButtonClass } from '../mechanicActionStyles';
 
 interface MechanicRowProps {
-	readonly mechanic: MechanicListItem;
-	readonly highlightQuery: string;
-	readonly canRemove: boolean;
-	readonly onResetPassword: (mechanic: MechanicListItem) => void;
-	readonly onDelete: (mechanic: MechanicListItem) => void;
+  readonly mechanic: MechanicListItem;
+  readonly highlightQuery: string;
+  readonly canRemove: boolean;
+  readonly onResetPassword: (mechanic: MechanicListItem) => void;
+  readonly onDelete: (mechanic: MechanicListItem) => void;
 }
 
 /** One roster row: avatar, highlighted name and email, and the reset-password and delete actions. */
 function MechanicRow({ mechanic, highlightQuery, canRemove, onResetPassword, onDelete }: MechanicRowProps) {
-	const { t } = useTranslation();
-	const displayName = buildMechanicDisplayName(mechanic);
+  const { t } = useTranslation();
+  const displayName = buildMechanicDisplayName(mechanic);
 
-	return (
-		<div
-			data-testid={`mechanic-row-${String(mechanic.personId)}`}
-			className={`relative flex min-w-0 items-start gap-3 px-4 py-3 max-[350px]:flex-wrap max-[350px]:gap-y-2 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
-		>
-			<MechanicAvatar
-				mechanicId={mechanic.personId}
-				fullName={displayName}
-				hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
-				sizeClassName="h-9 w-9 text-xs"
-			/>
+  return (
+    <div
+      data-testid={`mechanic-row-${String(mechanic.personId)}`}
+      className={`relative flex min-w-0 items-start gap-3 px-4 py-3 max-[350px]:flex-wrap max-[350px]:gap-y-2 ${rowHoverMotionClass} hover:-translate-y-px sm:items-center ${compactInputSurfaceClass}`}
+    >
+      <MechanicAvatar
+        mechanicId={mechanic.personId}
+        fullName={displayName}
+        hasProfilePicture={Boolean(mechanic.hasProfilePicture)}
+        sizeClassName="h-9 w-9 text-xs"
+      />
 
-			<div className="min-w-0 flex-1">
-				<p className={compactListPrimaryWrapTextClass}>
-					<HighlightedText text={displayName} query={highlightQuery} />
-				</p>
-				<p className={compactListSecondaryTextClass} title={mechanic.email}>
-					<HighlightedText text={mechanic.email} query={highlightQuery} />
-				</p>
-			</div>
+      <div className="min-w-0 flex-1">
+        <p className={compactListPrimaryWrapTextClass}>
+          <HighlightedText text={displayName} query={highlightQuery} />
+        </p>
+        <p className={compactListSecondaryTextClass} title={mechanic.email}>
+          <HighlightedText text={mechanic.email} query={highlightQuery} />
+        </p>
+      </div>
 
-			<div className="ml-auto flex shrink-0 items-center gap-1.5 self-start max-[350px]:basis-full max-[350px]:justify-end">
-				{!mechanic.isAdmin && (
-					<button
-						type="button"
-						onClick={() => {
-							onResetPassword(mechanic);
-						}}
-						title={t('admin.resetPassword')}
-						aria-label={t('admin.resetPassword')}
-						className={mechanicWarningIconButtonClass}
-					>
-						<KeyRound className={defaultIconClass} aria-hidden="true" />
-					</button>
-				)}
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 self-start max-[350px]:basis-full max-[350px]:justify-end">
+        {!mechanic.isAdmin && (
+          <button
+            type="button"
+            onClick={() => {
+              onResetPassword(mechanic);
+            }}
+            title={t('admin.resetPassword')}
+            aria-label={t('admin.resetPassword')}
+            className={mechanicWarningIconButtonClass}
+          >
+            <KeyRound className={defaultIconClass} aria-hidden="true" />
+          </button>
+        )}
 
-				{canRemove && (
-					<button
-						type="button"
-						onClick={() => {
-							onDelete(mechanic);
-						}}
-						title={t('admin.deleteMechanic')}
-						aria-label={t('admin.deleteMechanic')}
-						className={mechanicDangerIconButtonClass}
-					>
-						<Trash2 className={defaultIconClass} aria-hidden="true" />
-					</button>
-				)}
-			</div>
-		</div>
-	);
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => {
+              onDelete(mechanic);
+            }}
+            title={t('admin.deleteMechanic')}
+            aria-label={t('admin.deleteMechanic')}
+            className={mechanicDangerIconButtonClass}
+          >
+            <Trash2 className={defaultIconClass} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** Renders the admin mechanic roster: server-side search, fixed-size pages, and password reset and delete actions. */
 export const MechanicListSection = memo(function MechanicListSection() {
-	const { t } = useTranslation();
-	const showSuccessToast = useToastStore((state) => state.showSuccess);
-	const showErrorToast = useToastStore((state) => state.showError);
-	const showWarningToast = useToastStore((state) => state.showWarning);
+  const { t } = useTranslation();
+  const showSuccessToast = useToastStore((state) => state.showSuccess);
+  const showErrorToast = useToastStore((state) => state.showError);
+  const showWarningToast = useToastStore((state) => state.showWarning);
 
-	const {
-		isLoading,
-		mechanics,
-		totalCount,
-		page,
-		setPage,
-		isPlaceholderData,
-		removableMechanicCount,
-		hasSearch,
-		searchTerm,
-		setSearchTerm,
-		clearSearch,
-		deleteTarget,
-		isDeleting,
-		openDeleteModal,
-		closeDeleteModal,
-		handleDelete,
-	} = useMechanicListState({
-		showErrorToast,
-		showSuccessToast,
-	});
-	const passwordReset = useMechanicPasswordReset({ showErrorToast, showSuccessToast, showWarningToast });
+  const {
+    isLoading,
+    mechanics,
+    totalCount,
+    page,
+    setPage,
+    isPlaceholderData,
+    removableMechanicCount,
+    hasSearch,
+    searchTerm,
+    setSearchTerm,
+    clearSearch,
+    deleteTarget,
+    isDeleting,
+    openDeleteModal,
+    closeDeleteModal,
+    handleDelete,
+  } = useMechanicListState({
+    showErrorToast,
+    showSuccessToast,
+  });
+  const passwordReset = useMechanicPasswordReset({ showErrorToast, showSuccessToast, showWarningToast });
 
-	const highlightQuery = searchTerm.trim();
+  const highlightQuery = searchTerm.trim();
 
-	if (isLoading) {
-		return (
-			<div role="status" className={centeredLoadingWrapperClass}>
-				<div className={`h-8 w-8 ${loadingSpinnerClass}`} />
-			</div>
-		);
-	}
+  if (isLoading) {
+    return (
+      <div role="status" aria-label={t('admin.loadingMechanics')} className={centeredLoadingWrapperClass}>
+        <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
+      </div>
+    );
+  }
 
-	return (
-		<>
-			{totalCount === 0 && !hasSearch ? (
-				<p className={emptyStateBoxClass}>{t('admin.noMechanics')}</p>
-			) : (
-				<div className="space-y-3">
-					<MechanicListToolbar
-						t={t}
-						searchTerm={searchTerm}
-						onSearchChange={setSearchTerm}
-						onClearSearch={clearSearch}
-					/>
+  return (
+    <>
+      {totalCount === 0 && !hasSearch ? (
+        <p className={emptyStateBoxClass}>{t('admin.noMechanics')}</p>
+      ) : (
+        <div className="space-y-3">
+          <MechanicListToolbar
+            t={t}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onClearSearch={clearSearch}
+          />
 
-					{mechanics.length > 0 ? (
-						<div className="flex flex-col gap-3">
-							{mechanics.map((mechanic) => (
-								<MechanicRow
-									key={mechanic.personId}
-									mechanic={mechanic}
-									highlightQuery={highlightQuery}
-									canRemove={!mechanic.isAdmin && removableMechanicCount > 1}
-									onResetPassword={passwordReset.openPasswordReset}
-									onDelete={openDeleteModal}
-								/>
-							))}
-						</div>
-					) : (
-						<p className={emptyStateBoxClass}>{t('admin.noMechanicsFound')}</p>
-					)}
+          {mechanics.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {mechanics.map((mechanic) => (
+                <MechanicRow
+                  key={mechanic.personId}
+                  mechanic={mechanic}
+                  highlightQuery={highlightQuery}
+                  canRemove={!mechanic.isAdmin && removableMechanicCount > 1}
+                  onResetPassword={passwordReset.openPasswordReset}
+                  onDelete={openDeleteModal}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className={emptyStateBoxClass}>{t('admin.noMechanicsFound')}</p>
+          )}
 
-					<Pagination
-						page={page}
-						totalCount={totalCount}
-						pageSize={MECHANIC_LIST_PAGE_SIZE}
-						onPageChange={setPage}
-						isLoading={isPlaceholderData}
-						testIdPrefix="mechanics-pagination"
-					/>
-				</div>
-			)}
+          <Pagination
+            page={page}
+            totalCount={totalCount}
+            pageSize={MECHANIC_LIST_PAGE_SIZE}
+            onPageChange={setPage}
+            isLoading={isPlaceholderData}
+            testIdPrefix="mechanics-pagination"
+          />
+        </div>
+      )}
 
-			<MechanicPasswordResetModal
-				target={passwordReset.resetTarget}
-				temporaryPassword={passwordReset.temporaryPassword}
-				passwordError={passwordReset.passwordError}
-				isResetting={passwordReset.isResetting}
-				onPasswordChange={passwordReset.changeTemporaryPassword}
-				onClose={passwordReset.closePasswordReset}
-				onConfirm={passwordReset.confirmPasswordReset}
-			/>
+      <MechanicPasswordResetModal
+        target={passwordReset.resetTarget}
+        temporaryPassword={passwordReset.temporaryPassword}
+        passwordError={passwordReset.passwordError}
+        isResetting={passwordReset.isResetting}
+        onPasswordChange={passwordReset.changeTemporaryPassword}
+        onClose={passwordReset.closePasswordReset}
+        onConfirm={passwordReset.confirmPasswordReset}
+      />
 
-			<ConfirmModal
-				isOpen={deleteTarget !== null}
-				title={t('admin.deleteMechanicModalTitle')}
-				isBusy={isDeleting}
-				onClose={closeDeleteModal}
-				onConfirm={handleDelete}
-				confirmLabel={t('admin.confirmDelete')}
-				busyLabel={t('common.actions.deleting')}
-				icon={Trash2}
-				tone="danger"
-				confirmDisabled={!deleteTarget}
-			>
-				<p className={`break-words ${mutedBodyTextClass} [overflow-wrap:anywhere]`}>
-					{t('admin.deleteMechanicWarning', {
-						name: deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : '',
-						email: deleteTarget?.email ?? '',
-					})}
-				</p>
-			</ConfirmModal>
-		</>
-	);
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title={t('admin.deleteMechanicModalTitle')}
+        isBusy={isDeleting}
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
+        confirmLabel={t('admin.confirmDelete')}
+        busyLabel={t('common.actions.deleting')}
+        icon={Trash2}
+        tone="danger"
+        confirmDisabled={!deleteTarget}
+      >
+        <p className={`break-words ${mutedBodyTextClass} [overflow-wrap:anywhere]`}>
+          {t('admin.deleteMechanicWarning', {
+            name: deleteTarget ? buildMechanicDisplayName(deleteTarget) : '',
+            email: deleteTarget?.email ?? '',
+          })}
+        </p>
+      </ConfirmModal>
+    </>
+  );
 });

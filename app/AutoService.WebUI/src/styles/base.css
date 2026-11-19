@@ -68,33 +68,8 @@
 
   input,
   textarea,
-  select,
   button {
     font: inherit;
-  }
-
-  select,
-  option,
-  optgroup {
-    transition: none !important;
-  }
-
-  select option {
-    background-color: var(--ui-input);
-    color: var(--ui-text);
-  }
-
-  select option:hover,
-  select option:focus,
-  select option:checked {
-    color: var(--ui-text);
-    background: var(--color-arsm-accent-subtle) linear-gradient(0deg, var(--color-arsm-accent-subtle), var(--color-arsm-accent-subtle));
-  }
-
-  .dark select option:hover,
-  .dark select option:focus,
-  .dark select option:checked {
-    background: var(--color-arsm-toggle-bg-dark) linear-gradient(0deg, var(--color-arsm-toggle-bg-dark), var(--color-arsm-toggle-bg-dark));
   }
 
   a {

@@ -5,7 +5,6 @@ import type {
   AppointmentDto,
   AppointmentStatus,
   UpdateAppointmentRequest,
-  UpdateAppointmentVehicleRequest,
 } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
 import { getDueState } from '../../utils/due-date';
@@ -27,16 +26,14 @@ interface AppointmentDetailModalProps {
   readonly onClose: () => void;
   readonly currentMechanicId: number | undefined;
   readonly isAdmin: boolean;
+  /** The page clock (ms), so the due state ticks with the rest of the page. */
+  readonly now: number;
   readonly onClaim: (id: number) => Promise<void>;
   readonly onStatusChange: (id: number, status: AppointmentStatus, version: number) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
   readonly onAdminAssign: (appointmentId: number, mechanicId: number) => Promise<void>;
   readonly onAdminUnassign: (appointmentId: number, mechanicId: number) => Promise<void>;
-  readonly onUpdate: (
-    id: number,
-    request: UpdateAppointmentRequest,
-    vehicleRequest?: UpdateAppointmentVehicleRequest,
-  ) => Promise<void>;
+  readonly onUpdate: (id: number, request: UpdateAppointmentRequest) => Promise<void>;
   readonly onDelete: (id: number) => Promise<void>;
 }
 
@@ -50,6 +47,7 @@ function AppointmentDetailDialog({
   onClose,
   currentMechanicId,
   isAdmin,
+  now,
   onClaim,
   onStatusChange,
   onUnclaim,
@@ -142,7 +140,7 @@ function AppointmentDetailDialog({
           fieldErrors={editing.fieldErrors}
           formattedDate={formatLongDateTime(appointment.scheduledDate, i18n.language)}
           dueDateLabel={formatDueExactDateTime(appointment.dueDateTime, i18n.language)}
-          dueState={getDueState(appointment.dueDateTime, appointment.status)}
+          dueState={getDueState(appointment.dueDateTime, appointment.status, now)}
           quoteId={quoteId}
           onOpenQuote={handleOpenQuote}
           onEditVehicle={handleEditVehicle}

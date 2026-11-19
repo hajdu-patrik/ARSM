@@ -8,6 +8,12 @@ public static class ObjectStorageSettingsResolver
 {
     private const string ConfigurationSection = "ObjectStorage";
 
+    private static readonly EnvironmentFirstSettingReader Reader = new(
+        ConfigurationSection,
+        "Object storage setting",
+        key => $"Object storage setting '{ConfigurationSection}:{key}' is missing. Run through AppHost (Aspire injects it), or set it in appsettings.Local.json or the '{ConfigurationSection}__{key}' environment variable.",
+        "local value");
+
     /** Reads 'ObjectStorage:Provider': S3 (default when unset, so existing configs keep working) or AzureBlob. */
     public static ObjectStorageProvider ResolveProvider(IConfiguration configuration)
     {
@@ -52,53 +58,11 @@ public static class ObjectStorageSettingsResolver
             DisableDefaultChecksumValidation: ResolveRequiredFlag(configuration, "DisableDefaultChecksumValidation"));
     }
 
-    /** Reads a required string setting and rejects blank values and template placeholders. */
-    private static string ResolveRequiredValue(IConfiguration configuration, string key)
-    {
-        var value = ResolveRawValue(configuration, key);
+    private static string ResolveRequiredValue(IConfiguration configuration, string key) => Reader.ReadRequired(configuration, key);
 
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException(
-                $"Object storage setting '{ConfigurationSection}:{key}' is missing. Run through AppHost (Aspire injects it), or set it in appsettings.Local.json or the '{ConfigurationSection}__{key}' environment variable.");
-        }
+    private static Uri ResolveHttpsUri(IConfiguration configuration, string key) => Reader.ReadHttpsUri(configuration, key);
 
-        if (TemplateMarkerDetector.ContainsTemplateMarker(value))
-        {
-            throw new InvalidOperationException(
-                $"Object storage setting '{ConfigurationSection}:{key}' still contains a template placeholder marker (for example CHANGE_ME or SET_UNIQUE_LOCAL). Replace it with a real local value before startup.");
-        }
-
-        return value;
-    }
-
-    /** Reads a required setting that must be an absolute https URI. */
-    private static Uri ResolveHttpsUri(IConfiguration configuration, string key)
-    {
-        var value = ResolveRequiredValue(configuration, key);
-
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-        {
-            throw new InvalidOperationException(
-                $"Object storage setting '{ConfigurationSection}:{key}' must be an absolute https URL.");
-        }
-
-        return uri;
-    }
-
-    /** Reads a required setting that must be a GUID and returns it in canonical form. */
-    private static string ResolveGuid(IConfiguration configuration, string key)
-    {
-        var value = ResolveRequiredValue(configuration, key);
-
-        if (!Guid.TryParse(value, out var parsed))
-        {
-            throw new InvalidOperationException(
-                $"Object storage setting '{ConfigurationSection}:{key}' must be a GUID.");
-        }
-
-        return parsed.ToString();
-    }
+    private static string ResolveGuid(IConfiguration configuration, string key) => Reader.ReadGuid(configuration, key);
 
     /** Reads a required boolean setting and rejects blank or unparsable values. */
     private static bool ResolveRequiredFlag(IConfiguration configuration, string key)
@@ -120,13 +84,5 @@ public static class ObjectStorageSettingsResolver
         return parsed;
     }
 
-    /** Reads the raw setting value, letting the environment variable win over configuration. */
-    private static string? ResolveRawValue(IConfiguration configuration, string key)
-    {
-        var fromEnvironment = Environment.GetEnvironmentVariable($"{ConfigurationSection}__{key}");
-
-        return string.IsNullOrWhiteSpace(fromEnvironment)
-            ? configuration[$"{ConfigurationSection}:{key}"]
-            : fromEnvironment;
-    }
+    private static string? ResolveRawValue(IConfiguration configuration, string key) => Reader.ReadRaw(configuration, key);
 }

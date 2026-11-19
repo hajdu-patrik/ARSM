@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace AutoService.UnitTests.Data;
 
-/** Answers every query from memory: the scripted row for an entity select, false for an EXISTS probe, and no connection. */
-internal sealed partial class ScriptedRowsInterceptor(IReadOnlyDictionary<string, object?> entityRow) : DbCommandInterceptor
+/** Answers every query from memory: the scripted row for an entity select, false for an EXISTS probe, the count for a COUNT, and no connection. */
+internal sealed partial class ScriptedRowsInterceptor(IReadOnlyDictionary<string, object?> entityRow, int count = 2) : DbCommandInterceptor
 {
     [GeneratedRegex("""\.("[A-Za-z]+"|[A-Za-z]+)(?=,|\s+FROM)""")]
     private static partial Regex SelectedColumn();
@@ -16,14 +16,20 @@ internal sealed partial class ScriptedRowsInterceptor(IReadOnlyDictionary<string
     {
         var table = new DataTable();
         var row = new List<object?>();
-        if (command.CommandText.Contains("EXISTS", StringComparison.Ordinal))
+        var sql = command.CommandText;
+        var selectList = sql[..sql.IndexOf("FROM", StringComparison.Ordinal)];
+        if (sql.Contains("EXISTS", StringComparison.Ordinal))
         {
             table.Columns.Add("exists", typeof(bool));
             row.Add(false);
         }
+        else if (selectList.Contains("count(", StringComparison.OrdinalIgnoreCase))
+        {
+            table.Columns.Add("count", typeof(int));
+            row.Add(count);
+        }
         else
         {
-            var selectList = command.CommandText[..command.CommandText.IndexOf("FROM", StringComparison.Ordinal)];
             foreach (Match column in SelectedColumn().Matches(selectList + " FROM"))
             {
                 var name = column.Groups[1].Value.Trim('"');

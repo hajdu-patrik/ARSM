@@ -3,7 +3,7 @@ using AutoService.ApiService.Realtime;
 namespace AutoService.ApiService.Appointments.Realtime;
 
 /** Payload published whenever an appointment is created or changed; deliberately small, since
-    subscribers refresh their view rather than patch state from it (an appointment can move months). */
+    subscribers refresh their view rather than patch state from it. */
 internal sealed record AppointmentUpdatedEvent(
     int AppointmentId,
     long OccurredAt);

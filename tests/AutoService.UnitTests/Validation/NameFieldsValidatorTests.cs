@@ -2,14 +2,13 @@ using AutoService.ApiService.Validation;
 
 namespace AutoService.UnitTests.Validation;
 
-/** Name validation: letters and hyphens only, required flags, trimming, and the per-field messages. */
+/** Name validation: letters and hyphens only, trimming, blank values ignored, and the per-field messages. */
 public sealed class NameFieldsValidatorTests
 {
-    private static Dictionary<string, string[]> Validate(
-        string? first, string? middle, string? last, bool requireFirst = false, bool requireLast = false)
+    private static Dictionary<string, string[]> Validate(string? first, string? middle, string? last)
     {
         var errors = new Dictionary<string, string[]>();
-        NameFieldsValidator.ValidateNames(first, middle, last, errors, requireFirst, requireLast);
+        NameFieldsValidator.ValidateNames(first, middle, last, errors);
         return errors;
     }
 
@@ -27,19 +26,9 @@ public sealed class NameFieldsValidatorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void ValidateNames_reports_a_missing_required_first_and_last_name(string? blank)
+    public void ValidateNames_does_not_report_blank_names(string? blank)
     {
-        var errors = Validate(blank, null, blank, requireFirst: true, requireLast: true);
-
-        Assert.Equal(new[] { ValidationMessages.FirstNameRequired }, errors["FirstName"]);
-        Assert.Equal(new[] { ValidationMessages.LastNameRequired }, errors["LastName"]);
-        Assert.False(errors.ContainsKey("MiddleName"));
-    }
-
-    [Fact]
-    public void ValidateNames_does_not_require_names_unless_asked()
-    {
-        Assert.Empty(Validate("", "", ""));
+        Assert.Empty(Validate(blank, blank, blank));
     }
 
     [Theory]

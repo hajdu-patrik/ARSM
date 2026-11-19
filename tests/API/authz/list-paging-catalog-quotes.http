@@ -63,7 +63,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/parts?page=100000&pageSize=5
 
 ?? status == 200
 ?? js response.parsedBody.items.length == 0
-?? js response.parsedBody.totalCount >= 0
+?? js response.parsedBody.totalCount >= 1
 
 ###
 
@@ -116,7 +116,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/labor-types?page=100000&pageSize=
 
 ?? status == 200
 ?? js response.parsedBody.items.length == 0
-?? js response.parsedBody.totalCount >= 0
+?? js response.parsedBody.totalCount >= 1
 
 ###
 
@@ -169,7 +169,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/quotes?page=100000&pageSize=5
 
 ?? status == 200
 ?? js response.parsedBody.items.length == 0
-?? js response.parsedBody.totalCount >= 0
+?? js response.parsedBody.totalCount >= 1
 
 ###
 

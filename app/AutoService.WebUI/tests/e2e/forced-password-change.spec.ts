@@ -1,6 +1,7 @@
 /** An account whose password an administrator reset (a temporary one) can use only the change-password page:
  * the guards send it there, and it leaves once the password is replaced or the user logs out. */
 import { expect, test, type Page } from '@playwright/test';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { AuthPage } from './pages/auth.page';
 import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
@@ -89,7 +90,7 @@ test.describe('Required password change', () => {
     await page.getByRole('button', { name: 'Log out' }).click();
 
     await expect(page).toHaveURL(/\/login$/);
-    expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBeNull();
+    expect(await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY)).toBeNull();
   });
 
   test('a wrong temporary password is refused under its field and the page stays', async ({ page }) => {

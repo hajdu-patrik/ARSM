@@ -80,9 +80,9 @@ public static partial class AdminEndpoints
             return outcome.Failure;
         }
 
+        sessionRevocation.RevokeAll(id);
         await ProfilePictureObjectCleanup.TryDeleteAsync(storage, outcome.PictureObjectKey, logger);
         broadcaster.PublishAppointmentsChanged(outcome.AppointmentIds);
-        sessionRevocation.RevokeAll(id);
         logger.LogInformation("DeleteMechanic succeeded for mechanic {MechanicId} by admin {ActorPersonId}.", id, callerPid);
 
         return Results.Ok(new { message = "Mechanic deleted successfully." });
@@ -199,6 +199,7 @@ public static partial class AdminEndpoints
         return null;
     }
 
+    /** True when the exception chain holds a concurrency conflict or a Postgres deadlock, both worth a client retry. */
     private static bool IsMechanicDeleteConcurrencyConflict(Exception exception)
     {
         for (Exception? current = exception; current is not null; current = current.InnerException)
@@ -208,9 +209,7 @@ public static partial class AdminEndpoints
                 return true;
             }
 
-            if (current is PostgresException postgresException
-                && (postgresException.SqlState == PostgresErrorCodes.SerializationFailure
-                    || postgresException.SqlState == PostgresErrorCodes.DeadlockDetected))
+            if (current is PostgresException { SqlState: PostgresErrorCodes.DeadlockDetected })
             {
                 return true;
             }

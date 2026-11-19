@@ -6,12 +6,13 @@ import { APP_ROUTE_PATHS } from '../router/appRoutes';
 import { quotesQueries } from '../services/queries/quotes.queries';
 import { useAuthQueryScope } from '../services/queries/useAuthQueryScope';
 
-export interface AppointmentQuoteLink {
+interface AppointmentQuoteLink {
   quoteId: number | null;
   isResolving: boolean;
   openQuote: () => void;
 }
 
+/** Newest quote id of the appointment (null while none or unresolved) and a navigation to it. */
 export function useAppointmentQuoteLink(appointmentId: number | null, enabled = true): AppointmentQuoteLink {
   const scope = useAuthQueryScope();
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export function useAppointmentQuoteLink(appointmentId: number | null, enabled = 
     enabled: enabled && isValidId,
   });
 
-  const items = query.data?.items ?? [];
+  const items = query.isPlaceholderData ? [] : (query.data?.items ?? []);
   const quoteId = items.length > 0 ? Math.max(...items.map((item) => item.id)) : null;
 
   const openQuote = useCallback(() => {

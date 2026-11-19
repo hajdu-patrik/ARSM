@@ -2,6 +2,7 @@ using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Linking;
 using AutoService.ApiService.Normalization;
+using AutoService.ApiService.Pagination;
 using AutoService.ApiService.Validation;
 using Microsoft.EntityFrameworkCore;
 using AutoService.ApiService.Http;
@@ -13,6 +14,7 @@ public static partial class CustomerEndpoints
     private const int DefaultCustomerLookupLimit = 10;
     private const int MaxCustomerLookupLimit = 25;
 
+    /** Looks a customer up by email; a mechanic's email resolves to its owned customer or a bare mechanic entry. */
     private static async Task<IResult> GetCustomerByEmailAsync(
         string email,
         AutoServiceDbContext db,
@@ -65,6 +67,7 @@ public static partial class CustomerEndpoints
         return Results.Ok(ToSchedulerCustomerLookupDto(customer));
     }
 
+    /** Looks the owner of an exact license plate up and marks the matched vehicle. */
     private static async Task<IResult> GetCustomerByLicensePlateAsync(
         string? licensePlate,
         AutoServiceDbContext db,
@@ -104,6 +107,7 @@ public static partial class CustomerEndpoints
         return Results.Ok(ToSchedulerCustomerLookupDto(customer, matchedVehicle.Id));
     }
 
+    /** Returns up to `limit` customers whose name or plate matches the search text. */
     private static async Task<IResult> GetCustomersByNameAsync(
         string? name,
         int? limit,
@@ -124,16 +128,7 @@ public static partial class CustomerEndpoints
         // .ToUpper().Contains() (not ILike) matches the pg_trgm GIN indexes' exact upper(...) expressions;
         // split into a name/plate UNION so each side keeps its own index (an OR forces a table scan).
         var nameMatchedCustomerIds = db.Customers
-            .Where(c =>
-                c.Name.FirstName.ToUpper().Contains(searchTerm) ||
-                (c.Name.MiddleName != null && c.Name.MiddleName.ToUpper().Contains(searchTerm)) ||
-                c.Name.LastName.ToUpper().Contains(searchTerm) ||
-                (c.Name.FirstName + " " + c.Name.LastName).ToUpper().Contains(searchTerm) ||
-                (c.Name.MiddleName != null &&
-                 (c.Name.FirstName + " " + c.Name.MiddleName + " " + c.Name.LastName).ToUpper().Contains(searchTerm)) ||
-                (c.Name.LastName + " " + c.Name.FirstName).ToUpper().Contains(searchTerm) ||
-                (c.Name.MiddleName != null &&
-                 (c.Name.LastName + " " + c.Name.FirstName + " " + c.Name.MiddleName).ToUpper().Contains(searchTerm)))
+            .Where(PersonNameSearch.Matches<Customer>(searchTerm))
             .Select(c => c.Id);
 
         var plateMatchedCustomerIds = db.Vehicles

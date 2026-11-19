@@ -17,9 +17,9 @@ function toAuthUser({ personId, isAdmin, mustChangePassword }: ValidateTokenResp
   return { personId, isAdmin, mustChangePassword };
 }
 
-/** Stores the user as signed in and clears any previous auth error. */
+/** Stores the user as signed in. */
 function setAuthenticatedUser(user: AuthUser): void {
-  useAuthStore.setState({ user, isAuthenticated: true, error: null });
+  useAuthStore.setState({ user, isAuthenticated: true });
 }
 
 /** Resets the auth store, the private query cache and the other per-user browser state to logged-out defaults. */

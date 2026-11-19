@@ -12,7 +12,7 @@ import {
   type QuoteLineFormState,
 } from '../helpers';
 
-/** Quote writes fail fast while offline instead of pausing: a paused write would fire minutes later against a quote the mechanic has left. */
+/** Quote writes fail fast while offline instead of pausing, so none fires later against a quote the mechanic left. */
 export const QUOTE_WRITE_NETWORK_MODE = 'always';
 
 /** A built payload, or the i18n key of the first field error that blocked it. */
@@ -20,6 +20,7 @@ type PayloadResult<TPayload> =
   | { readonly ok: true; readonly payload: TPayload }
   | { readonly ok: false; readonly fieldError: string };
 
+/** The linked appointment id from the select value, or null when none is chosen. */
 function parseAppointmentId(appointmentId: string): number | null {
   if (appointmentId.trim().length === 0) {
     return null;
@@ -29,11 +30,19 @@ function parseAppointmentId(appointmentId: string): number | null {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+/** Builds the create-draft payload from the header form, validity and appointment link included. */
 export function buildCreateQuoteRequest(form: QuoteHeaderFormState): PayloadResult<CreateQuoteRequest> {
   const { title: titleError } = validateQuoteHeaderForm(form);
 
   if (titleError !== undefined) {
     return { ok: false, fieldError: titleError };
+  }
+
+  const validUntil = form.validUntil.length > 0 ? toValidUntilIso(form.validUntil) : null;
+
+  // A typed date the browser cannot turn into a deadline is refused like a past one.
+  if (form.validUntil.length > 0 && validUntil === null) {
+    return { ok: false, fieldError: 'quotes.errors.validUntilInPast' };
   }
 
   const notes = form.notes.trim();
@@ -43,13 +52,13 @@ export function buildCreateQuoteRequest(form: QuoteHeaderFormState): PayloadResu
     payload: {
       title: form.title.trim(),
       notes: notes.length > 0 ? notes : null,
-      validUntil: form.validUntil.length > 0 ? toValidUntilIso(form.validUntil) : null,
+      validUntil,
       appointmentId: parseAppointmentId(form.appointmentId),
     },
   };
 }
 
-/** Builds the header-edit payload; ValidUntil is absent on purpose since extending validity is its own endpoint/action (D23). */
+/** Builds the header-edit payload; validUntil is absent because extending validity has its own endpoint. */
 export function buildUpdateQuoteRequest(form: QuoteHeaderFormState, version: number): PayloadResult<UpdateQuoteRequest> {
   const { title: titleError } = validateQuoteHeaderForm(form);
 
@@ -65,7 +74,7 @@ export function buildUpdateQuoteRequest(form: QuoteHeaderFormState, version: num
   };
 }
 
-/** Builds the unified line payload (D40): the catalog reference carries the snapshot, any field still filled overrides it server-side. */
+/** Builds the unified line payload: the catalog reference carries the snapshot, any field still filled overrides it server-side. */
 export function buildQuoteLineRequest(form: QuoteLineFormState, version: number): PayloadResult<QuoteLineRequest> {
   const { quantity: quantityError, description: descriptionError, netUnitPrice: priceError } = validateQuoteLineForm(form);
   const fieldError = quantityError ?? descriptionError ?? priceError;

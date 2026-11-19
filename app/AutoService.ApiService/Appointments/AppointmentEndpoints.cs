@@ -4,6 +4,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    /** Maps the appointment routes: the appointment, customer-history and vehicle-history groups. */
     public static IEndpointRouteBuilder MapAppointmentEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/appointments")
@@ -36,7 +37,7 @@ public static partial class AppointmentEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapPut("/{id}", UpdateAppointmentAsync)
+        group.MapPut("/{id:int}", UpdateAppointmentAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
@@ -44,7 +45,7 @@ public static partial class AppointmentEndpoints
             .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapDelete("/{id}", DeleteAppointmentAsync)
+        group.MapDelete("/{id:int}", DeleteAppointmentAsync)
             .RequireAuthorization("AdminOnly")
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -52,7 +53,7 @@ public static partial class AppointmentEndpoints
             .Produces<object>(StatusCodes.Status404NotFound)
             .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict);
 
-        group.MapPut("/{id}/vehicle", UpdateAppointmentVehicleAsync)
+        group.MapPut("/{id:int}/vehicle", UpdateAppointmentVehicleAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
@@ -60,7 +61,7 @@ public static partial class AppointmentEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapPut("/{id}/claim", ClaimAsync)
+        group.MapPut("/{id:int}/claim", ClaimAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
@@ -68,7 +69,7 @@ public static partial class AppointmentEndpoints
             .Produces<object>(StatusCodes.Status409Conflict)
             .Produces<ErrorCodeResponse>(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapDelete("/{id}/claim", UnclaimAsync)
+        group.MapDelete("/{id:int}/claim", UnclaimAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden)
@@ -76,7 +77,7 @@ public static partial class AppointmentEndpoints
             .Produces<object>(StatusCodes.Status409Conflict)
             .Produces<object>(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapPut("/{id}/status", UpdateStatusAsync)
+        group.MapPut("/{id:int}/status", UpdateStatusAsync)
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces<object>(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -85,7 +86,7 @@ public static partial class AppointmentEndpoints
             .Produces<ErrorCodeResponse>(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapPut("/{id}/assign/{mechanicId}", AdminAssignAsync)
+        group.MapPut("/{id:int}/assign/{mechanicId:int}", AdminAssignAsync)
             .RequireAuthorization("AdminOnly")
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
@@ -94,7 +95,7 @@ public static partial class AppointmentEndpoints
             .Produces<object>(StatusCodes.Status409Conflict)
             .Produces<object>(StatusCodes.Status422UnprocessableEntity);
 
-        group.MapDelete("/{id}/assign/{mechanicId}", AdminUnassignAsync)
+        group.MapDelete("/{id:int}/assign/{mechanicId:int}", AdminUnassignAsync)
             .RequireAuthorization("AdminOnly")
             .Produces<AppointmentDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)

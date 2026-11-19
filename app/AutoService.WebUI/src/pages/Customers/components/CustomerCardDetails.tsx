@@ -1,6 +1,6 @@
 /** Expanded part of a customer card: the customer's vehicles, read once it mounts, and the inline details panel. */
 
-import { memo, useState } from 'react';
+import { memo, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
 import { CarFront, Plus } from 'lucide-react';
@@ -72,6 +72,7 @@ export const CustomerCardDetails = memo(function CustomerCardDetails({
     onCreateQuoteForVehicle,
   } = actions;
   const scope = useAuthQueryScope();
+  const detailsPanelId = useId();
   const [requestedPage, setRequestedPage] = useState(1);
   const vehiclesQuery = useQuery(
     customersQueries.vehiclesPage(scope, customer.id, { page: requestedPage, pageSize: VEHICLES_PAGE_SIZE }),
@@ -114,8 +115,9 @@ export const CustomerCardDetails = memo(function CustomerCardDetails({
             </button>
           </div>
 
-          {isLoadingVehicles && <p className={`text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingVehicles')}</p>}
+          {isLoadingVehicles && <p role="status" className={`text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingVehicles')}</p>}
           {!isLoadingVehicles && !hasLoadFailed && vehicles.length === 0 && <p className={`text-center ${mutedSecondaryTextClass}`}>{t('customers.emptyVehicles')}</p>}
+          {!isLoadingVehicles && hasLoadFailed && <p className={`text-center ${mutedSecondaryTextClass}`}>{t('customers.errors.vehiclesLoadFailed')}</p>}
           {!isLoadingVehicles && vehicles.length > 0 && (
             <div className="min-w-0 divide-y divide-ui-border/80">
               {vehicles.map((vehicle) => (
@@ -131,6 +133,7 @@ export const CustomerCardDetails = memo(function CustomerCardDetails({
                   onOpenVehicleDetails={onOpenVehicleDetails}
                   onCreateQuoteForVehicle={onCreateQuoteForVehicle}
                   isDetailsOpen={targetVehicle?.id === vehicle.id}
+                  detailsRegionId={detailsPanelId}
                 />
               ))}
             </div>
@@ -146,10 +149,9 @@ export const CustomerCardDetails = memo(function CustomerCardDetails({
           />
         </section>
 
-        <div className="min-w-0 border-t border-ui-border/65 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+        <div id={detailsPanelId} className="min-w-0 border-t border-ui-border/65 pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
           <CustomerDetailsPanel
             target={panelTarget}
-            variant="inline"
             locale={locale}
             history={history}
             t={t}

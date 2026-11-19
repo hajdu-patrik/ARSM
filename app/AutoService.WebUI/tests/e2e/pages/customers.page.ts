@@ -6,7 +6,8 @@ import { paginationControls, type PaginationControls } from '../support/paginati
 import { signInWithMocks } from '../support/sign-in';
 import type { MockApiState } from '../support/test-data';
 
-const vehicleDetailsToggleLabelPattern = /Show vehicle history|Hide vehicle history|Járműelőzmények megjelenítése|Járműelőzmények elrejtése/i;
+/** The per-plate name of a vehicle tile's select button; its aria-expanded tells whether the history is shown. */
+const vehicleHistoryButtonNamePattern = /vehicle repair history|jármű javítási előzményei/i;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
@@ -151,7 +152,7 @@ export class CustomersPage {
   }
 
   detailsPanel(): Locator {
-    return this.page.getByRole('complementary', { name: /^(Customer details panel|Ügyféladatok panel)$/ });
+    return this.page.getByRole('region', { name: /^(Customer details panel|Ügyféladatok panel)$/ });
   }
 
   /** A whole vehicle tile; a click anywhere on it outside the row actions toggles the vehicle's history. */
@@ -160,7 +161,7 @@ export class CustomersPage {
   }
 
   vehicleDetailsToggle(customerId: number, index = 0): Locator {
-    return this.customerCard(customerId).getByRole('button', { name: vehicleDetailsToggleLabelPattern }).nth(index);
+    return this.customerCard(customerId).getByRole('button', { name: vehicleHistoryButtonNamePattern }).nth(index);
   }
 
   vehicleDialog(title: string): Locator {

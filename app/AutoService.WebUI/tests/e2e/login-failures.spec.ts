@@ -1,6 +1,7 @@
 /** Login refusals from the server: bad credentials, the lockout wait in minutes (from the body or the Retry-After
  * header), a dropped connection, a retry that works, and the /500 detour for a failing server. */
 import { expect, test, type Page } from '@playwright/test';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
 import type { MockFailure } from './support/api-mock-response';
@@ -9,6 +10,7 @@ import { errorToastMessage, toastMessage } from './support/toast';
 const LOGIN = 'POST /api/auth/login';
 const PASSWORD = 'StrongPass1!';
 
+/** Opens the login page with the login route failing as given (or not at all) and submits the credentials. */
 async function submitLoginWith(page: Page, failure: MockFailure | null, options: Partial<InstallApiMockOptions> = {}) {
   await primeBrowserState(page);
   const state = await installApiMocks(page, {
@@ -35,8 +37,9 @@ test.describe('Rejected credentials', () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator('#identifier')).toHaveValue('mechanic@example.test');
     await expect(page.locator('#password')).toHaveValue('');
+    await expect(page.locator('#password')).toBeFocused();
     await expect(page.getByRole('button', { name: 'Log in', exact: true })).toBeEnabled();
-    expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBeNull();
+    expect(await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY)).toBeNull();
   });
 
   test('a second attempt after a refusal signs in', async ({ page }) => {
@@ -48,7 +51,7 @@ test.describe('Rejected credentials', () => {
 
     await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
     await expect(toastMessage(page, 'Login successful.')).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBe('1');
+    expect(await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY)).toBe('1');
   });
 
   test('a mechanic-only refusal names the portal rule', async ({ page }) => {

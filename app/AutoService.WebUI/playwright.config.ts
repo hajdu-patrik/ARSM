@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCi = (process.env.CI ?? '').length > 0;
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://localhost:5173';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `https://localhost:${process.env.PORT ?? '5173'}`;
 const forceReuseExistingServer = ['1', 'true'].includes(process.env.PLAYWRIGHT_REUSE_EXISTING_SERVER ?? '');
 const parsedWorkers = Number.parseInt(process.env.PLAYWRIGHT_WORKERS ?? '', 10);
 const workers = Number.isFinite(parsedWorkers) && parsedWorkers > 0 ? parsedWorkers : 1;

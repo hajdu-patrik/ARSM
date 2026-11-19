@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using AutoService.ApiService.Data;
 using AutoService.ApiService.Domain;
+using AutoService.ApiService.Http;
 using AutoService.ApiService.Identity;
 using AutoService.ApiService.Lifecycle;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +42,7 @@ public static partial class AppointmentEndpoints
                     m.Id,
                     m.Name.ToString(),
                     m.Specialization.ToString(),
-                    m.ProfilePictureObjectKey is not null || m.ProfilePictureContentType is not null))
+                    ProjectionFormat.HasProfilePicture(m.ProfilePictureObjectKey)))
                 .ToList(),
             appointment.Version,
             hasAcceptedQuote,
@@ -50,11 +51,11 @@ public static partial class AppointmentEndpoints
             AppointmentQuoteLifecycle.CanLinkQuote(appointment.Status, hasAcceptedQuote));
     }
 
-    /** Loads an appointment tracked, with the mechanics, vehicle, owner and quotes that ToDto reads. */
+    /** Loads an appointment tracked, with the mechanics, vehicle and quotes that ToDto reads. */
     private static Task<Appointment?> LoadAppointmentAsync(AutoServiceDbContext db, int id, CancellationToken cancellationToken)
         => db.Appointments
             .Include(a => a.Mechanics)
-            .Include(a => a.Vehicle).ThenInclude(v => v.Customer)
+            .Include(a => a.Vehicle)
             .Include(a => a.Quotes)
             .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
@@ -98,5 +99,5 @@ public static partial class AppointmentEndpoints
         return (appointment, mechanicId, null);
     }
 
-    private static IResult AppointmentNotFound() => Results.NotFound(new { code = "appointment_not_found" });
+    private static IResult AppointmentNotFound() => Results.NotFound(new ErrorCodeResponse("appointment_not_found"));
 }

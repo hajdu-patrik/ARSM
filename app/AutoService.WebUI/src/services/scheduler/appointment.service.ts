@@ -6,11 +6,12 @@ import type {
   SchedulerCreateIntakeRequest,
   SchedulerCustomerLookupDto,
   UpdateAppointmentRequest,
-  UpdateAppointmentVehicleRequest,
   UpdateStatusRequest,
 } from '../../types/scheduler/scheduler.types';
 
+/** HTTP calls of the scheduler appointments API; callers own caching and error toasts. */
 export const appointmentService = {
+  /** URL of the appointment live-update SSE stream. */
   getAppointmentUpdatesUrl(): string {
     return `${API_URL}/api/appointments/updates`;
   },
@@ -34,15 +35,11 @@ export const appointmentService = {
     return response.data;
   },
 
-  async updateAppointmentVehicle(id: number, request: UpdateAppointmentVehicleRequest): Promise<AppointmentDto> {
-    const response = await apiClient.put<AppointmentDto>(`/api/appointments/${String(id)}/vehicle`, request);
-    return response.data;
-  },
-
   async deleteAppointment(id: number): Promise<void> {
     await apiClient.delete(`/api/appointments/${String(id)}`);
   },
 
+  /** Appointments scheduled in the given month; `options` can silence the error redirect for background refetches. */
   async getByMonth(year: number, month: number, options?: SilentRequestOptions): Promise<AppointmentDto[]> {
     const response = await apiClient.get<AppointmentDto[]>('/api/appointments', {
       params: { year, month },
@@ -56,6 +53,7 @@ export const appointmentService = {
     return response.data;
   },
 
+  /** Changes the lifecycle status; the request carries the version the appointment was shown at. */
   async updateStatus(id: number, status: UpdateStatusRequest): Promise<AppointmentDto> {
     const response = await apiClient.put<AppointmentDto>(
       `/api/appointments/${String(id)}/status`,

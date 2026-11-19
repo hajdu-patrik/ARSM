@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from scriptsupport import TempDirCase
+from scriptsupport import ROOT, TempDirCase
 
 from azure_deploy import config as cfg
 from azure_deploy.constants import OPTIONAL_DEFAULTS, REQUIRED_KEYS, SECRET_KEYS
@@ -16,6 +16,16 @@ def issues_of(raw: dict[str, str]) -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for issue in cfg.collect_issues(raw):
         found.setdefault(issue.key, []).append(issue.reason)
+    return found
+
+
+def template_secret_values() -> dict[str, str]:
+    """The literal ARSM_* secret placeholders of the tracked root .env.example (never the real .env)."""
+    found: dict[str, str] = {}
+    for line in (ROOT / ".env.example").read_text(encoding="utf-8").splitlines():
+        key, _, value = line.partition("=")
+        if key in SECRET_KEYS:
+            found[key] = value
     return found
 
 
@@ -40,6 +50,13 @@ class CollectIssuesTests(unittest.TestCase):
             raw["ARSM_JWT_SECRET"] = f"x{marker}x"
             with self.subTest(marker=marker):
                 self.assertEqual(issues_of(raw)["ARSM_JWT_SECRET"], ["still holds a template placeholder"])
+
+    def test_the_env_example_placeholders_are_reported_as_template_markers(self) -> None:
+        placeholders = template_secret_values()
+        self.assertEqual(set(placeholders), set(SECRET_KEYS))
+        for key, value in placeholders.items():
+            with self.subTest(key=key):
+                self.assertEqual(issues_of({**valid_env(), key: value})[key], ["still holds a template placeholder"])
 
     def test_invalid_values_get_the_check_reason(self) -> None:
         raw = {**valid_env(), "ARSM_AZURE_SUBSCRIPTION_ID": "nope", "ARSM_PUBLIC_URL": "http://arsm.example.test"}

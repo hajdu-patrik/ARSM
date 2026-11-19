@@ -6,7 +6,6 @@ Thumbs.db
 Desktop.ini
 
 .vscode/*
-!.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -15,7 +14,6 @@ Desktop.ini
 # Claude MCP: keep runtime local, allow template
 .claude/.mcp.json
 !.claude/.mcp.template.json
-.claude/.settings.local.json
 .claude/settings.local.json
 
 .idea/
@@ -111,9 +109,6 @@ secrets.json
 
 # Local GitHub Actions runner overrides
 .actrc.local
-
-# Docker / container local overrides
-docker-compose.override.yml
 
 # Temporary files
 tmp/

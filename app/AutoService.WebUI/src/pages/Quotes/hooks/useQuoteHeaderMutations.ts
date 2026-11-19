@@ -94,14 +94,19 @@ export function useQuoteHeaderMutations({ editor, outcome, showErrorToast }: Use
       return;
     }
 
-    extendValidity({
-      quoteId: quote.id,
-      request: { validUntil: toValidUntilIso(headerForm.validUntil), version: quote.version },
-    });
-  }, [extendValidity, headerForm.validUntil, quote]);
+    const validUntil = toValidUntilIso(headerForm.validUntil);
+
+    if (validUntil === null) {
+      showErrorToast('quotes.errors.validUntilInPast');
+      return;
+    }
+
+    extendValidity({ quoteId: quote.id, request: { validUntil, version: quote.version } });
+  }, [extendValidity, headerForm.validUntil, quote, showErrorToast]);
 
   return {
-    isSavingQuote: isCreatingQuote || isSavingHeader || isExtendingValidity,
+    isSavingQuote: isCreatingQuote || isSavingHeader,
+    isExtendingValidity,
     handleCreateQuote,
     handleSaveHeader,
     handleExtendValidity,

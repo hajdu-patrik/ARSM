@@ -20,5 +20,5 @@ Use this skill for `app/AutoService.WebUI/tests/e2e/**`.
 
 ## Execution
 
-- Run with `python scripts/run-local-test-suite.py playwright`.
+- Run the specs selected for the diff with `python scripts/select-e2e-specs.py --run`.
 - Use only sanitized summary: `tests/.artifacts/test-suite-summary.json`.

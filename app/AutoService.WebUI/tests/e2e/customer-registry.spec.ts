@@ -1,8 +1,9 @@
+/** Customer registry: vehicle flows, the search field (icon and match highlight), history dates and a failed
+ * vehicle history read. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { ANNA_VEHICLE_ROW, CustomersPage, ELECTRIC_AUDI } from './pages/customers.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks, type InstallApiMockOptions } from './support/api-mocks';
+import type { InstallApiMockOptions } from './support/api-mocks';
+import { signInWithMocks } from './support/sign-in';
 import { errorToastMessage } from './support/toast';
 import { MOCK_CUSTOMER_IDS, MOCK_VEHICLE_IDS } from './support/test-data';
 
@@ -49,13 +50,7 @@ async function countContrastPixels(page: Page, target: Locator): Promise<number>
 
 /** Prepares authenticated customer-registry state with optional repair-history failures. */
 async function prepareCustomerRegistry(page: Page, options: CustomerRegistrySetupOptions = {}): Promise<void> {
-  const env = getAppointmentFlowEnv();
-
-  await installApiMocks(page, {
-    profileEmail: env.mechanicEmail,
-    ...options,
-  });
-  await new AuthPage(page).loginAsMechanic(env);
+  await signInWithMocks(page, options);
 }
 
 test.describe('Customer registry vehicle flows', () => {
@@ -162,7 +157,6 @@ test.describe('Customer search field', () => {
     await page.keyboard.type('ko');
     await expect(customersPage.searchInput()).toBeFocused();
     await expect.poll(() => countContrastPixels(page, icon)).toBeGreaterThan(8);
-
   });
 
   test('highlights a match with the accent text color only: no background, same font weight', async ({ page }) => {
@@ -225,7 +219,8 @@ test.describe('Customer registry vehicle history failures', () => {
 
     const panel = customersPage.detailsPanel();
     await customersPage.expectVehicleHistoryOnlyPanel('NXE-441');
-    await expect(panel).toContainText(/No repair history found for this vehicle|Nincs javítási előzmény ehhez a járműhöz/i);
+    await expect(panel).toContainText(/Failed to load repair history|Nem sikerült betölteni a javítási előzményeket/i);
+    await expect(panel).not.toContainText(/No repair history found for this vehicle|Nincs javítási előzmény ehhez a járműhöz/i);
     await expect(errorToastMessage(page, /Failed to load repair history|Nem sikerült betölteni a javítási előzményeket/i)).toBeVisible();
   });
 });

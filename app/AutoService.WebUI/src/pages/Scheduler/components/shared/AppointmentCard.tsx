@@ -25,9 +25,11 @@ interface AppointmentCardProps {
   readonly appointment: AppointmentDto;
   readonly currentMechanicId: number | undefined;
   readonly isAdmin: boolean;
+  /** The page clock (ms), so the due state ticks with the rest of the page. */
+  readonly now: number;
   readonly onClaim: (id: number) => Promise<void>;
   readonly onUnclaim: (id: number) => Promise<void>;
-  readonly onClick?: () => void;
+  readonly onCardClick?: (appointment: AppointmentDto) => void;
 }
 
 /** Appointment card with status, vehicle, due state, mechanics and inline claim/unassign actions. */
@@ -35,14 +37,15 @@ export const AppointmentCard = memo(function AppointmentCard({
   appointment,
   currentMechanicId,
   isAdmin,
+  now,
   onClaim,
   onUnclaim,
-  onClick,
+  onCardClick,
 }: AppointmentCardProps) {
   const { t, i18n } = useTranslation();
   const isAssigned = currentMechanicId !== undefined
     && appointment.mechanics.some((mechanic) => mechanic.id === currentMechanicId);
-  const dueState = getDueState(appointment.dueDateTime, appointment.status);
+  const dueState = getDueState(appointment.dueDateTime, appointment.status, now);
   const { vehicle } = appointment;
   const canClaimAppointment = !isAdmin && !isAssigned && appointment.status === 'InProgress';
   const canUnclaimAppointment = !isAdmin && isAssigned && appointment.status === 'InProgress' && appointment.mechanics.length > 1;
@@ -53,8 +56,6 @@ export const AppointmentCard = memo(function AppointmentCard({
 
   const scheduleDateValue = new Date(appointment.scheduledDate);
   const hasValidScheduleDate = !Number.isNaN(scheduleDateValue.getTime());
-  const dueDateValue = new Date(appointment.dueDateTime);
-  const hasValidDueDate = !Number.isNaN(dueDateValue.getTime());
 
   const scheduleDateLabel = hasValidScheduleDate
     ? formatShortDateTime(scheduleDateValue, i18n.language)
@@ -81,8 +82,8 @@ export const AppointmentCard = memo(function AppointmentCard({
     closeUnclaimConfirm,
   } = cardActions;
 
-  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-[background-color,border-color,color,transform] duration-200 hover:outline-2 hover:outline-arsm-focus-ring/45 dark:hover:outline-arsm-focus-ring/30 ${contentCardFrameClass}${onClick ? ' cursor-pointer' : ''}`;
-  const cardContentClassName = onClick ? 'pointer-events-none relative z-10 flex flex-col gap-3.5' : 'flex flex-col gap-3.5';
+  const cardClassName = `relative flex flex-col gap-3.5 p-4 transition-[background-color,border-color,color,transform] duration-200 ${contentCardFrameClass}${onCardClick ? ' cursor-pointer hover:outline-2 hover:outline-arsm-focus-ring/45 dark:hover:outline-arsm-focus-ring/30' : ''}`;
+  const cardContentClassName = onCardClick ? 'pointer-events-none relative z-10 flex flex-col gap-3.5' : 'flex flex-col gap-3.5';
 
   const cardContent: ReactNode = (
     <div className={cardContentClassName}>
@@ -93,7 +94,7 @@ export const AppointmentCard = memo(function AppointmentCard({
 
       <div className="min-w-0 space-y-3">
         <div className="min-w-0 space-y-1">
-          <h3 className={compactItemTitleClampTextClass}>{vehicleTitle}</h3>
+          <h4 className={compactItemTitleClampTextClass}>{vehicleTitle}</h4>
           <p className={`font-mono [overflow-wrap:anywhere] ${mutedMetaTextClass}`}>{vehicle.licensePlate}</p>
         </div>
 
@@ -104,13 +105,11 @@ export const AppointmentCard = memo(function AppointmentCard({
             <Clock3 className={smallIconClass} />
             <span>{t('scheduler.due.label')}</span>
           </span>
-          {hasValidDueDate && (
-            <p className={`min-w-0 text-xs font-semibold [overflow-wrap:anywhere] ${dueState.toneClassName}`}>
-              {dueState.labelValues === undefined
-                ? t(dueState.labelKey)
-                : t(dueState.labelKey, dueState.labelValues)}
-            </p>
-          )}
+          <p className={`min-w-0 text-xs font-semibold [overflow-wrap:anywhere] ${dueState.toneClassName}`}>
+            {dueState.labelValues === undefined
+              ? t(dueState.labelKey)
+              : t(dueState.labelKey, dueState.labelValues)}
+          </p>
         </div>
 
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 overflow-visible pt-0.5">
@@ -175,11 +174,13 @@ export const AppointmentCard = memo(function AppointmentCard({
 
   const cardElement = (
     <div className={cardClassName}>
-      {onClick && (
+      {onCardClick && (
         <button
           type="button"
-          onClick={onClick}
-          aria-label={t('scheduler.detail.title')}
+          onClick={() => {
+            onCardClick(appointment);
+          }}
+          aria-label={t('scheduler.detail.titleForPlate', { plate: vehicle.licensePlate })}
           // Inset outline: the card's overflow-hidden would clip an outer one.
           className={`absolute inset-0 z-0 rounded-2xl ${insetFocusVisibleOutlineClass}`}
         />
@@ -191,16 +192,18 @@ export const AppointmentCard = memo(function AppointmentCard({
   return (
     <>
       {cardElement}
-      <AppointmentCardActionModals
-        isClaimConfirmOpen={isClaimConfirmOpen}
-        isUnclaimConfirmOpen={isUnclaimConfirmOpen}
-        isClaiming={isClaiming}
-        isUnclaiming={isUnclaiming}
-        onCloseClaimConfirm={closeClaimConfirm}
-        onCloseUnclaimConfirm={closeUnclaimConfirm}
-        onConfirmClaim={() => { handleClaim().catch(() => undefined); }}
-        onConfirmUnclaim={() => { handleUnclaim().catch(() => undefined); }}
-      />
+      {showMechanicAction && (
+        <AppointmentCardActionModals
+          isClaimConfirmOpen={isClaimConfirmOpen}
+          isUnclaimConfirmOpen={isUnclaimConfirmOpen}
+          isClaiming={isClaiming}
+          isUnclaiming={isUnclaiming}
+          onCloseClaimConfirm={closeClaimConfirm}
+          onCloseUnclaimConfirm={closeUnclaimConfirm}
+          onConfirmClaim={() => { handleClaim().catch(() => undefined); }}
+          onConfirmUnclaim={() => { handleUnclaim().catch(() => undefined); }}
+        />
+      )}
     </>
   );
 });

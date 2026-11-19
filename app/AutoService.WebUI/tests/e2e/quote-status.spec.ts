@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
+import { recordGetRequests } from './support/request-log';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 import { signInWithMocks } from './support/sign-in';
 import { toastMessage } from './support/toast';
@@ -127,13 +128,7 @@ test.describe('Quotes - status flow', () => {
   });
 
   test('accepting a quote makes the scheduler read its months again when it is opened', async ({ page }) => {
-    const monthReads: string[] = [];
-    page.on('request', (request) => {
-      const url = new URL(request.url());
-      if (request.method() === 'GET' && url.pathname === '/api/appointments') {
-        monthReads.push(url.search);
-      }
-    });
+    const monthReads = recordGetRequests(page, '/api/appointments');
     await signInWithMocks(page);
     await expect.poll(() => monthReads.length).toBeGreaterThanOrEqual(3);
 

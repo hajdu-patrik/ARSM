@@ -8,6 +8,12 @@ internal static class DataProtectionSettingsResolver
 {
     private const string ConfigurationSection = "DataProtection";
 
+    private static readonly EnvironmentFirstSettingReader Reader = new(
+        ConfigurationSection,
+        "DataProtection setting",
+        key => $"DataProtection setting '{ConfigurationSection}:{key}' is missing or blank. Set it in configuration or the '{ConfigurationSection}__{key}' environment variable.",
+        "value");
+
     /** Returns null when 'DataProtection:Provider' is absent (framework default key ring), else the provider. */
     internal static DataProtectionKeyProvider? ResolveProvider(IConfiguration configuration)
     {
@@ -42,25 +48,7 @@ internal static class DataProtectionSettingsResolver
             ManagedIdentityClientId: ResolveGuid(configuration, "ManagedIdentityClientId"));
     }
 
-    /** Reads a required string setting and rejects blank values and template placeholders. */
-    private static string ResolveRequiredValue(IConfiguration configuration, string key)
-    {
-        var value = ResolveRawValue(configuration, key);
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException(
-                $"DataProtection setting '{ConfigurationSection}:{key}' is missing or blank. Set it in configuration or the '{ConfigurationSection}__{key}' environment variable.");
-        }
-
-        if (TemplateMarkerDetector.ContainsTemplateMarker(value))
-        {
-            throw new InvalidOperationException(
-                $"DataProtection setting '{ConfigurationSection}:{key}' still contains a template placeholder marker (for example CHANGE_ME or SET_UNIQUE_LOCAL). Replace it with a real value before startup.");
-        }
-
-        return value;
-    }
+    private static string ResolveRequiredValue(IConfiguration configuration, string key) => Reader.ReadRequired(configuration, key);
 
     /** Reads a required setting that must be a fully qualified file-system path. */
     private static string ResolveAbsolutePath(IConfiguration configuration, string key)
@@ -76,41 +64,9 @@ internal static class DataProtectionSettingsResolver
         return value;
     }
 
-    /** Reads a required setting that must be an absolute https URI. */
-    private static Uri ResolveHttpsUri(IConfiguration configuration, string key)
-    {
-        var value = ResolveRequiredValue(configuration, key);
+    private static Uri ResolveHttpsUri(IConfiguration configuration, string key) => Reader.ReadHttpsUri(configuration, key);
 
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-        {
-            throw new InvalidOperationException(
-                $"DataProtection setting '{ConfigurationSection}:{key}' must be an absolute https URL.");
-        }
+    private static string ResolveGuid(IConfiguration configuration, string key) => Reader.ReadGuid(configuration, key);
 
-        return uri;
-    }
-
-    /** Reads a required setting that must be a GUID and returns it in canonical form. */
-    private static string ResolveGuid(IConfiguration configuration, string key)
-    {
-        var value = ResolveRequiredValue(configuration, key);
-
-        if (!Guid.TryParse(value, out var parsed))
-        {
-            throw new InvalidOperationException(
-                $"DataProtection setting '{ConfigurationSection}:{key}' must be a GUID.");
-        }
-
-        return parsed.ToString();
-    }
-
-    /** Reads the raw value, letting a non-blank environment variable win; null means the key is absent. */
-    private static string? ResolveRawValue(IConfiguration configuration, string key)
-    {
-        var fromEnvironment = Environment.GetEnvironmentVariable($"{ConfigurationSection}__{key}");
-
-        return string.IsNullOrWhiteSpace(fromEnvironment)
-            ? configuration[$"{ConfigurationSection}:{key}"]
-            : fromEnvironment;
-    }
+    private static string? ResolveRawValue(IConfiguration configuration, string key) => Reader.ReadRaw(configuration, key);
 }

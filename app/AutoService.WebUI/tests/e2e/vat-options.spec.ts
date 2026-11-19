@@ -1,10 +1,9 @@
 /** VAT dropdown choices (5, 18, 27; 27 default), a stored 0% row staying listed, and the full catalog in the quote pickers. */
 import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
+import { signInWithMocks } from './support/sign-in';
+import { recordGetRequests } from './support/request-log';
 import { expectDropdownLabel, readDropdownOptionValues } from './support/dropdown';
 import type { MockApiState } from './support/test-data';
 
@@ -14,10 +13,8 @@ const EXTRA_CATALOG_ROWS = 30;
 /** Mocks the API, lets the caller seed the state, and signs in as a mechanic on a tall viewport. */
 async function boot(page: Page, seed?: (state: MockApiState) => void): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 1000 });
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
+  const state = await signInWithMocks(page);
   seed?.(state);
-  await new AuthPage(page).loginAsMechanic(env);
 }
 
 test.describe('VAT options - catalog forms', () => {
@@ -111,12 +108,8 @@ test.describe('VAT options - quote pickers use the full catalog', () => {
   }
 
   test('lists parts and labour types beyond the first 20 and asks for 500 per page', async ({ page }) => {
-    const catalogUrls: string[] = [];
-    page.on('request', (request) => {
-      if (/\/api\/(parts|labor-types)\?/.test(request.url())) {
-        catalogUrls.push(request.url());
-      }
-    });
+    const partReads = recordGetRequests(page, '/api/parts');
+    const laborTypeReads = recordGetRequests(page, '/api/labor-types');
     await boot(page, seedLongCatalogs);
     const quotes = new QuotesPage(page);
     await quotes.goto();
@@ -133,7 +126,7 @@ test.describe('VAT options - quote pickers use the full catalog', () => {
     await expect(page.getByTestId(`quote-line-catalog-select-option-${String(6000 + EXTRA_CATALOG_ROWS)}`)).toBeAttached();
     await page.keyboard.press('Escape');
 
-    expect(catalogUrls.some((url) => url.includes('/api/parts?') && url.includes('pageSize=500'))).toBe(true);
-    expect(catalogUrls.some((url) => url.includes('/api/labor-types?') && url.includes('pageSize=500'))).toBe(true);
+    expect(partReads.some((url) => url.searchParams.get('pageSize') === '500')).toBe(true);
+    expect(laborTypeReads.some((url) => url.searchParams.get('pageSize') === '500')).toBe(true);
   });
 });

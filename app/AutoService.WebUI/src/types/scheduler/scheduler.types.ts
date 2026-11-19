@@ -81,7 +81,7 @@ export interface SchedulerVehicleLookupDto {
   drivetrainType: DrivetrainType;
 }
 
-/** Customer data from `GET /api/customers/by-email`, including registered vehicles for intake selection. */
+/** Customer data from the intake customer lookup, including registered vehicles for intake selection. */
 export interface SchedulerCustomerLookupDto {
   id: number;
   firstName: string;
@@ -130,16 +130,4 @@ export interface UpdateAppointmentRequest {
   taskDescription: string;
   /** Version the appointment was shown at; a stale one is refused with a 409. */
   version: number;
-}
-
-/** Request payload for updating appointment vehicle details (`PUT /api/appointments/{id}/vehicle`). */
-export interface UpdateAppointmentVehicleRequest {
-  licensePlate: string;
-  vin: string;
-  brand: string;
-  model: string;
-  year: number;
-  mileageKm: number;
-  enginePowerKw: number;
-  drivetrainType: DrivetrainType;
 }

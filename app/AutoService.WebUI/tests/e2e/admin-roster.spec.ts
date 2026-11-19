@@ -1,5 +1,5 @@
 /** Admin mechanic roster: which rows offer which actions, the empty, no-match and failed states, search
- * highlight, and mechanic deletion with every server refusal it maps. */
+ * highlight, and mechanic deletion with every server refusal it maps (a 404 is in admin-roster-not-found). */
 import { expect, test, type Page } from '@playwright/test';
 import { AdminPage } from './pages/admin.page';
 import { fulfillJson } from './support/api-mock-response';
@@ -158,7 +158,6 @@ test.describe('Delete mechanic', () => {
     { status: 422, detail: 'Cannot delete the last remaining mechanic.', message: 'Cannot delete the last remaining mechanic.' },
     { status: 403, detail: 'Forbidden', message: 'You do not have permission to delete this mechanic.' },
     { status: 409, detail: 'Conflict', message: 'Deletion failed due to a conflict. Please try again.' },
-    { status: 404, detail: 'Mechanic not found.', message: 'Failed to delete mechanic.' },
     { status: 500, detail: 'The linked account could not be deleted.', message: 'Failed to delete linked account. Please try again later.' },
   ] as const;
 

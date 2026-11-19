@@ -96,7 +96,8 @@ for (const stateCase of STATE_CASES) {
           return;
         }
 
-        await fulfillJson(route, { detail: 'Not found.' }, 404);
+        // A 404 means the row is gone (catalog-edge-cases) and a 500 leaves for /500; this is any other refusal.
+        await fulfillJson(route, { detail: 'The item could not be deleted.' }, 400);
       });
       const catalog = new CatalogPage(page);
       await catalog.goto(stateCase.tab);

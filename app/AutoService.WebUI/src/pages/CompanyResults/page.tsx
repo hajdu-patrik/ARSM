@@ -1,4 +1,4 @@
-/** Company results page: accepted quotes for a period with pending/expired/rejected, a monthly and VAT breakdown; a quote counts in its creation month, so past months never change retroactively. */
+/** Company results page: accepted, pending, expired and rejected quotes of a period with monthly and VAT breakdowns. */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToastStore } from '../../store/toast.store';
@@ -15,6 +15,7 @@ import { CompanyResultSummary } from './components/CompanyResultSummary';
 import { CompanyResultMonthList } from './components/CompanyResultMonthList';
 import { VatBreakdownList } from './components/VatBreakdownList';
 
+/** Route component of `/company-results`: the period picker over the summary and the two breakdowns. */
 export const CompanyResultsPage = memo(function CompanyResultsPage() {
   const { t, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);
@@ -37,7 +38,7 @@ export const CompanyResultsPage = memo(function CompanyResultsPage() {
       />
 
       {isLoading && (
-        <p className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('companyResults.loading')}</p>
+        <p role="status" className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('companyResults.loading')}</p>
       )}
 
       {!isLoading && result && (

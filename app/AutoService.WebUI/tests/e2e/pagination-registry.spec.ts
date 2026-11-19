@@ -1,12 +1,10 @@
 /** Customers list paging: page size follows the viewport, arrows and indicator, server-side search,
  * ascending order without any sort parameter, and the vehicles of an expanded card five at a time. */
 import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { CustomersPage } from './pages/customers.page';
-import { installApiMocks } from './support/api-mocks';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
 import { recordGetRequests } from './support/request-log';
+import { signInWithMocks } from './support/sign-in';
+import { MOCK_CUSTOMER_IDS, type MockApiState } from './support/test-data';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SEEDED_CUSTOMER_COUNT = 26;
@@ -83,12 +81,10 @@ test.describe('Customers list paging', () => {
   let customersPage: CustomersPage;
 
   test.beforeEach(async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
+    const state = await signInWithMocks(page);
     seedCustomers(state);
     seedAnnaVehicles(state);
     customerRequests = recordGetRequests(page, '/api/customers');
-    await new AuthPage(page).loginAsMechanic(env);
     await page.setViewportSize(TALL_VIEWPORT);
     customersPage = new CustomersPage(page);
     await customersPage.goto();

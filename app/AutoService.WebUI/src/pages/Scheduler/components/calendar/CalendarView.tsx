@@ -24,6 +24,8 @@ interface CalendarViewProps {
   readonly onMonthChange: (year: number, month: number) => void;
   readonly onDayClick?: (day: number) => void;
   readonly selectedDay?: number | null;
+  /** The page clock (ms): the day it falls on is highlighted as today. */
+  readonly now: number;
 }
 
 interface CalendarDayCellProps {
@@ -51,14 +53,12 @@ function formatLocalDateKey(date: Date): string {
 }
 
 /** Builds the 42-cell (6-week, Monday-first) grid for a month, bucketed by local day. */
-function buildCalendarDays(year: number, month: number, appointments: AppointmentDto[]): CalendarDay[] {
+function buildCalendarDays(year: number, month: number, appointments: AppointmentDto[], todayStr: string): CalendarDay[] {
   const firstDay = new Date(year, month - 1, 1);
   const dayOfWeek = firstDay.getDay();
   const mondayOffset = (dayOfWeek + 6) % 7;
 
   const startDate = new Date(year, month - 1, 1 - mondayOffset);
-  const today = new Date();
-  const todayStr = formatLocalDateKey(today);
 
   const appointmentsByDate = new Map<string, AppointmentDto[]>();
   for (const appt of appointments) {
@@ -163,16 +163,22 @@ const CalendarDayCell = memo(function CalendarDayCell({
   const isSelected = day.isCurrentMonth && selectedDay === dayNum;
   const overflowTone = day.isCurrentMonth ? '' : 'opacity-50 saturate-75';
   const rowHeight = hasAppointmentsInWeek
-    ? 'min-h-[4.5rem] max-[320px]:min-h-[3.8rem] md:min-h-[2.5rem]'
-    : 'min-h-[2.5rem] max-[320px]:min-h-11';
+    ? 'min-h-[4.5rem] max-[320px]:min-h-[3.8rem] md:min-h-11'
+    : 'min-h-11';
+
+  // One background per state: a selected day wins over the today wash, which keeps its filled day badge.
+  let stateClassName = '';
+  if (isSelected) {
+    stateClassName = 'outline-2 outline-ui-accent bg-arsm-accent-wash/65 dark:bg-arsm-hover-dark/75';
+  } else if (day.isToday) {
+    stateClassName = 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85';
+  }
 
   const dayClassName = `${rowHeight} rounded-lg p-1 max-[320px]:p-0.5 flex flex-col items-center justify-start ${focusVisibleOutlineClass} ${
     day.isCurrentMonth
       ? 'text-ui-text hover:bg-ui-hover'
       : 'text-ui-muted'
-  } ${day.isToday ? 'bg-arsm-toggle-bg/80 dark:bg-arsm-toggle-bg-dark/85' : ''} ${
-    isSelected ? 'outline-2 outline-ui-accent bg-arsm-accent-wash/65 dark:bg-arsm-hover-dark/75' : ''
-  }`;
+  } ${stateClassName}`;
 
   const content = (
     <>
@@ -202,6 +208,8 @@ const CalendarDayCell = memo(function CalendarDayCell({
         type="button"
         data-testid={dayTestId}
         aria-label={dayAriaLabel}
+        aria-pressed={isSelected}
+        aria-current={day.isToday ? 'date' : undefined}
         onClick={() => {
           onDayClick(dayNum);
         }}
@@ -226,6 +234,7 @@ const CalendarViewComponent = memo(function CalendarView({
   onMonthChange,
   onDayClick,
   selectedDay,
+  now,
 }: CalendarViewProps) {
   const { t, i18n } = useTranslation();
 
@@ -236,7 +245,8 @@ const CalendarViewComponent = memo(function CalendarView({
     [i18n.language],
   );
 
-  const calendarDays = useMemo(() => buildCalendarDays(year, month, appointments), [year, month, appointments]);
+  const todayStr = formatLocalDateKey(new Date(now));
+  const calendarDays = useMemo(() => buildCalendarDays(year, month, appointments, todayStr), [year, month, appointments, todayStr]);
   const calendarWeeks = useMemo(() => {
     const weeks: CalendarDay[][] = [];
     for (let i = 0; i < calendarDays.length; i += 7) {
@@ -246,9 +256,9 @@ const CalendarViewComponent = memo(function CalendarView({
     return trimTrailingNextMonthOnlyWeeks(weeks);
   }, [calendarDays]);
 
-  const now = new Date();
-  const minDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-  const maxDate = new Date(now.getFullYear(), now.getMonth() + 6, 1);
+  const today = new Date(now);
+  const minDate = new Date(today.getFullYear(), today.getMonth() - 6, 1);
+  const maxDate = new Date(today.getFullYear(), today.getMonth() + 6, 1);
   const currentDate = new Date(year, month - 1, 1);
   const canGoPrev = currentDate > minDate;
   const canGoNext = currentDate < maxDate;
@@ -299,7 +309,7 @@ const CalendarViewComponent = memo(function CalendarView({
       </div>
 
       {isLoading ? (
-        <div className={centeredLoadingWrapperClass}>
+        <div role="status" aria-label={t('scheduler.loading')} className={centeredLoadingWrapperClass}>
           <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
         </div>
       ) : (

@@ -13,6 +13,7 @@ const OVERDUE_TONE = /text-arsm-error-text/;
 const SUCCESS_TONE = /text-ui-success-text/;
 const TODAY_APPOINTMENT_ID = 6101;
 const LINKED_QUOTE_TITLE = 'Timing belt replacement';
+const OTHER_HISTORY_APPOINTMENT_ID = 5002;
 
 /** Adds an appointment scheduled now that fell due 30 days ago, in the given status. */
 function addOverdueTodayAppointment(state: MockApiState, status: AppointmentStatus): void {
@@ -93,6 +94,44 @@ test.describe('Appointment - due state and quote link', () => {
     await expect(page).toHaveURL(/\/quotes$/);
     const editor = new QuotesPage(page).editorDialog();
     await expect(editor.getByTestId('quote-title-input')).toHaveValue(LINKED_QUOTE_TITLE);
+  });
+
+  test('opening another history appointment never shows the quote of the previous one while its quotes load', async ({ page }) => {
+    const state = await signInWithMocks(page);
+    const [firstAppointment] = state.customerHistoryByCustomerId[MOCK_CUSTOMER_IDS.anna] ?? [];
+    if (firstAppointment === undefined) {
+      throw new Error('The fixture history appointment is missing.');
+    }
+
+    const otherAppointment = { ...firstAppointment, id: OTHER_HISTORY_APPOINTMENT_ID, taskDescription: 'Brake pad replacement' };
+    state.vehicleHistoryByVehicleId[otherAppointment.vehicle.id]?.push(otherAppointment);
+    linkDraftQuoteTo(state, MOCK_APPOINTMENT_IDS.hybridInspection);
+    let releaseQuotes = (): void => undefined;
+    const quotesHeld = new Promise<void>((resolve) => {
+      releaseQuotes = resolve;
+    });
+    await page.route((url) => url.pathname === '/api/quotes' && url.searchParams.get('appointmentId') === String(OTHER_HISTORY_APPOINTMENT_ID), async (route) => {
+      await quotesHeld;
+      await route.fallback();
+    });
+    const customersPage = new CustomersPage(page);
+    await customersPage.goto();
+    await customersPage.expandCustomer(MOCK_CUSTOMER_IDS.anna);
+    await customersPage.openVehicleDetails(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.nxe441);
+    await customersPage.detailsPanel().getByRole('button', { name: /Hybrid system inspection/ }).click();
+    const historyDialog = page.getByRole('dialog', { name: 'Appointment history details' });
+    await expect(historyDialog.getByRole('button', { name: 'Open quote' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(historyDialog).toHaveCount(0);
+
+    const quotesRead = page.waitForRequest((request) => request.url().includes(`appointmentId=${String(OTHER_HISTORY_APPOINTMENT_ID)}`));
+    await customersPage.detailsPanel().getByRole('button', { name: /Brake pad replacement/ }).click();
+    await quotesRead;
+
+    await expect(historyDialog).toBeVisible();
+    await expect(historyDialog.getByRole('button', { name: 'Open quote' })).toHaveCount(0);
+    releaseQuotes();
+    await expect(historyDialog.getByRole('button', { name: 'Open quote' })).toHaveCount(0);
   });
 
   test('the customer history appointment has no quote button when no quote is linked', async ({ page }) => {

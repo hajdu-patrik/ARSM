@@ -1,8 +1,6 @@
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
 using AutoService.ApiService.Identity;
-using AutoService.ApiService.Normalization;
-using AutoService.ApiService.Security;
-using AutoService.ApiService.Validation;
 using AutoService.ApiService.Http;
 
 namespace AutoService.ApiService.Profile.Endpoints;
@@ -21,14 +19,17 @@ public static partial class ProfileEndpoints
             return ApiProblem.NotFound("Linked person record not found.");
         }
 
-        return Results.Ok(new ProfileResponse(
-            person.Id,
-            PersonTypeResolver.Resolve(person),
-            person.Name.FirstName,
-            person.Name.MiddleName,
-            person.Name.LastName,
-            person.Email,
-            person.PhoneNumber,
-            person.ProfilePictureObjectKey is not null || person.ProfilePictureContentType is not null));
+        return Results.Ok(ToProfileResponse(person));
     }
+
+    /** Maps a person to the profile response shared by the GET and PUT handlers. */
+    private static ProfileResponse ToProfileResponse(People person) => new(
+        person.Id,
+        PersonTypeResolver.Resolve(person),
+        person.Name.FirstName,
+        person.Name.MiddleName,
+        person.Name.LastName,
+        person.Email,
+        person.PhoneNumber,
+        ProjectionFormat.HasProfilePicture(person.ProfilePictureObjectKey));
 }

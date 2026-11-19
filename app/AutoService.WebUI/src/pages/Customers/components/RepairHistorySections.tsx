@@ -31,6 +31,8 @@ interface RepairHistoryViewProps {
   readonly title: string;
   readonly appointments: AppointmentDto[];
   readonly isLoading: boolean;
+  /** True when the read failed with nothing cached, so the empty text would be false. */
+  readonly hasLoadFailed: boolean;
   readonly sortDirection: SortDirection;
   readonly emptyMessage: string;
   readonly emptyMessageClassName?: string | undefined;
@@ -45,6 +47,7 @@ function RepairHistoryView({
   title,
   appointments,
   isLoading,
+  hasLoadFailed,
   sortDirection,
   emptyMessage,
   emptyMessageClassName,
@@ -69,10 +72,14 @@ function RepairHistoryView({
       </div>
 
       {isLoading && (
-        <p className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingHistory')}</p>
+        <p role="status" className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('customers.loadingHistory')}</p>
       )}
 
-      {!isLoading && (
+      {!isLoading && hasLoadFailed && (
+        <p className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('customers.errors.historyLoadFailed')}</p>
+      )}
+
+      {!isLoading && !hasLoadFailed && (
         <RepairHistoryList
           appointments={orderRepairHistory(appointments, sortDirection)}
           locale={locale}
@@ -94,6 +101,7 @@ interface CustomerRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
+/** Reads and shows the repair history of one customer. */
 export const CustomerRepairHistory = memo(function CustomerRepairHistory({
   t,
   locale,
@@ -114,6 +122,7 @@ export const CustomerRepairHistory = memo(function CustomerRepairHistory({
       title={t('customers.customerHistoryTitle')}
       appointments={historyQuery.data ?? NO_APPOINTMENTS}
       isLoading={historyQuery.isLoading}
+      hasLoadFailed={historyQuery.isError && historyQuery.data === undefined}
       sortDirection={sortDirection}
       emptyMessage={t('customers.emptyCustomerHistory')}
       onToggleSort={() => {
@@ -133,6 +142,7 @@ interface VehicleRepairHistoryProps {
   readonly onOpenAppointment: (appointment: AppointmentDto) => void;
 }
 
+/** Reads and shows the repair history of one vehicle. */
 export const VehicleRepairHistory = memo(function VehicleRepairHistory({
   t,
   locale,
@@ -154,6 +164,7 @@ export const VehicleRepairHistory = memo(function VehicleRepairHistory({
       title={t('customers.vehicleHistoryForPlateTitle', { plate: vehicle.licensePlate })}
       appointments={historyQuery.data ?? NO_APPOINTMENTS}
       isLoading={historyQuery.isLoading}
+      hasLoadFailed={historyQuery.isError && historyQuery.data === undefined}
       sortDirection={sortDirection}
       emptyMessage={t('customers.emptyVehicleHistory')}
       emptyMessageClassName="px-3 py-2 text-left"

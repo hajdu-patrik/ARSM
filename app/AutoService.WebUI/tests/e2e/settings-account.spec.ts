@@ -1,6 +1,7 @@
 /** Account section of Settings: which sections each role sees, and the delete-profile dialog (gating, reset on
  * cancel, the wrong-password refusal, the request and the sign-out). */
 import { expect, test } from '@playwright/test';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { openSettings } from './pages/settings.page';
 import type { TestLanguage } from './support/browser-state';
 import { errorToastMessage, toastMessage } from './support/toast';
@@ -78,7 +79,7 @@ test.describe('Delete profile dialog', () => {
     expect((await deleteRequest).postDataJSON()).toEqual({ currentPassword: PASSWORD });
     await expect(page).toHaveURL(/\/login$/);
     await expect(toastMessage(page, 'Profile deleted successfully.')).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBeNull();
+    expect(await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY)).toBeNull();
   });
 
   test('a wrong password is shown under the first field and the dialog stays open', async ({ page }) => {
@@ -132,7 +133,7 @@ test.describe('Delete profile dialog', () => {
       await expect(dialog).toBeVisible();
       await expect(page.locator('#delete-profile-password')).not.toHaveAttribute('aria-invalid', 'true');
       await expect(page).toHaveURL(/\/settings$/);
-      expect(await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'))).toBe('1');
+      expect(await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY)).toBe('1');
     });
   }
 });

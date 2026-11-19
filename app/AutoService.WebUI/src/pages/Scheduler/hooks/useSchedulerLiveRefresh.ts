@@ -1,5 +1,5 @@
 /** Live refresh of the scheduler reads: a change announced by the server invalidates the current view,
- * because an appointment can move between months, so nothing is patched locally. */
+ * so nothing is patched locally. */
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { useQueryClient } from '@tanstack/react-query';

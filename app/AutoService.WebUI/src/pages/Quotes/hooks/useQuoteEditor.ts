@@ -1,11 +1,11 @@
-/** Quote editor state hook: which quote or vehicle is open and what is read for it (detail, vehicle); the forms live in their own hooks, the writes in useQuoteMutations. */
+/** Quote editor state: which quote or vehicle is open and what is read for it; forms and writes live in their own hooks. */
 import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { quotesQueries } from '../../../services/queries/quotes.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
-import { IDLE_QUERY_ENTITY_ID, type QuoteEditorMode } from '../helpers';
+import { IDLE_QUERY_ENTITY_ID } from '../helpers';
 import { useQuoteHeaderForm } from './useQuoteHeaderForm';
 import { useQuoteLineForm } from './useQuoteLineForm';
 
@@ -26,6 +26,7 @@ function useCloseOnFailure(hasFailed: boolean, close: () => void): void {
   }, [hasFailed]);
 }
 
+/** Owns the open/close state of the quote editor and combines its reads with the header and line forms. */
 export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
   const scope = useAuthQueryScope();
   const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +46,6 @@ export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
   const quote = quoteId === null ? null : (quoteQuery.data ?? null);
   const vehicle = createVehicleId === null ? null : (vehicleQuery.data ?? null);
   const vehicleId = quote?.vehicleId ?? createVehicleId;
-  const mode: QuoteEditorMode = quoteId === null ? 'create' : 'edit';
   const isLoadingQuote = quoteId !== null && quote === null;
 
   const header = useQuoteHeaderForm(quote);
@@ -107,7 +107,6 @@ export function useQuoteEditor({ showErrorToast }: UseQuoteEditorParams) {
 
   return {
     isOpen,
-    mode,
     vehicleId,
     vehicle,
     quote,

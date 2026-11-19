@@ -10,7 +10,6 @@ import { usePasswordChange } from '../../hooks/usePasswordChange';
 import { authService } from '../../services/auth/auth.service';
 import { useAuthStore } from '../../store/auth.store';
 import { useToastStore } from '../../store/toast.store';
-import { logError } from '../../utils/devLog';
 import { defaultIconClass, secondaryButtonClass } from '../../utils/formStyles';
 
 export const ChangePasswordPage = memo(function ChangePasswordPage() {
@@ -47,9 +46,7 @@ export const ChangePasswordPage = memo(function ChangePasswordPage() {
 
   // The guard sends the signed-out user to the login page.
   const handleLogout = useCallback(() => {
-    authService.logout().catch((error: unknown) => {
-      logError('changePassword.logout', error);
-    });
+    void authService.logout();
   }, []);
 
   return (

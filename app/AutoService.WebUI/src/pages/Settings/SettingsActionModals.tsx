@@ -64,7 +64,7 @@ export const SettingsActionModals = memo(function SettingsActionModals({
         onClose={onClosePictureRemoveConfirm}
         onConfirm={onConfirmPictureRemove}
         confirmLabel={t('settings.confirmPictureRemove')}
-        busyLabel={t('settings.uploading')}
+        busyLabel={t('common.actions.deleting')}
         icon={Trash2}
         tone="danger"
       >
@@ -111,4 +111,3 @@ export const SettingsActionModals = memo(function SettingsActionModals({
     </>
   );
 });
-

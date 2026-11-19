@@ -7,7 +7,7 @@ import axios from 'axios';
 type ReadFailure = 'none' | 'auth-expired' | 'failed';
 
 /** The part of a query result that the helpers below read. */
-export interface ReadResult {
+interface ReadResult {
   readonly isPending: boolean;
   readonly isSuccess: boolean;
   readonly isError: boolean;

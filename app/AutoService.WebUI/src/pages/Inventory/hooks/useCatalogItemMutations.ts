@@ -16,7 +16,12 @@ import {
   type DeleteCatalogItemTarget,
   type PinnedCatalogFieldError,
 } from '../helpers';
-import { buildCatalogValues, resolveCatalogSaveErrorKey, type CatalogItemValues } from './catalogMutation.helpers';
+import {
+  buildCatalogValues,
+  isCatalogItemGone,
+  resolveCatalogSaveErrorKey,
+  type CatalogItemValues,
+} from './catalogMutation.helpers';
 
 /** Variables of the update mutation: the edited item's id and the version it was loaded at. */
 interface UpdateVariables {
@@ -39,6 +44,7 @@ function hasUpdateChanges<TDto>(config: CatalogItemConfig<TDto>, snapshot: TDto,
     || tab.getVat(snapshot) !== values.vatRatePercent;
 }
 
+/** Modal state and create/update/delete writes of one catalog kind, driven by its config. */
 export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
   const queryClient = useQueryClient();
   const scope = useAuthQueryScope();
@@ -72,6 +78,14 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
     }
   }, [config, refreshList]);
 
+  /** The item was deleted elsewhere: closes both dialogs, toasts the 404 and reloads the list. */
+  const handleItemGone = useCallback(() => {
+    setModalOpen(false);
+    setDeleteItem(null);
+    showErrorToast(config.notFoundKey);
+    void refreshList();
+  }, [config, refreshList, showErrorToast]);
+
   /** Toasts a rejected save and, when the message concerns one field, pins it under that field. */
   const reportSaveError = useCallback((messageKey: string) => {
     setPinnedFieldError(pinCatalogFieldError(messageKey, readCatalogFieldValues(form)));
@@ -100,6 +114,11 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
       setModalOpen(false);
     },
     onError: (error, { id }) => {
+      if (isCatalogItemGone(error)) {
+        handleItemGone();
+        return;
+      }
+
       if (isVersionConflict(error, config.versionConflictCode)) {
         showErrorToast('inventory.errors.versionConflict');
         void reloadAfterConflict(id);
@@ -117,7 +136,12 @@ export function useCatalogItemMutations<TDto>(config: CatalogItemConfig<TDto>) {
       showSuccessToast(config.deletedKey);
       setDeleteItem(null);
     },
-    onError: () => {
+    onError: (error) => {
+      if (isCatalogItemGone(error)) {
+        handleItemGone();
+        return;
+      }
+
       showErrorToast(config.deleteFailedKey);
     },
   });

@@ -7,6 +7,8 @@ import unittest
 
 from scriptsupport import ROOT, TempDirCase, captured, load_script
 
+import httpyac_summary
+
 runner = load_script("run-local-test-suite.py", "runner_under_test")
 
 
@@ -88,7 +90,7 @@ class LocalRunnerHelperTests(unittest.TestCase):
         self.assertEqual((len(tail), tail[0], tail[-1]), (40, "line 10", "line 49"))
 
     def test_json_payload_extraction(self) -> None:
-        extract = runner.LocalTestRunner._extract_json_payload
+        extract = httpyac_summary._extract_json_payload
         self.assertEqual(extract('{"status": "passed"}'), {"status": "passed"})
         self.assertEqual(extract('log {"status": "skipped"} more'), {"status": "skipped"})
         self.assertIsNone(extract("no json"))

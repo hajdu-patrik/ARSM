@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { TFunction } from 'i18next';
+import { TASK_DESCRIPTION_MAX_LENGTH } from '../detail/AppointmentDetailModal.edit';
 import { insetSurfaceClass, intakeFieldLabelClass, intakeFieldWrapperClass, textareaClass } from '../../../../utils/formStyles';
 
 interface SchedulerIntakeTaskSectionProps {
@@ -8,6 +9,7 @@ interface SchedulerIntakeTaskSectionProps {
   readonly onTaskDescriptionChange: (value: string) => void;
 }
 
+/** Intake section with the task description textarea, capped at the shared detail-modal limit. */
 export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSection({
   taskDescription,
   translate,
@@ -24,7 +26,7 @@ export const SchedulerIntakeTaskSection = memo(function SchedulerIntakeTaskSecti
             onTaskDescriptionChange(event.target.value);
           }}
           placeholder={translate('scheduler.intake.taskDescriptionPlaceholder')}
-          maxLength={200}
+          maxLength={TASK_DESCRIPTION_MAX_LENGTH}
           rows={4}
           className={textareaClass}
         />

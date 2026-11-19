@@ -1,9 +1,11 @@
+/** Confirmation dialogs of the appointment detail modal: status change, claim, unassign, save and delete. */
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Save, Trash2 } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { ConfirmModal } from '../../../../components/common/ConfirmModal';
 import { mutedBodyTextClass } from '../../../../utils/formStyles';
+import { appointmentStatusLabelKey } from '../../utils/appointmentStatusLabel';
 import { AppointmentCardActionModals } from '../shared/AppointmentCardActionModals';
 
 interface AppointmentDetailConfirmModalsProps {
@@ -29,6 +31,7 @@ interface AppointmentDetailConfirmModalsProps {
   readonly onConfirmDelete: () => void;
 }
 
+/** The detail modal's confirmations: status change, claim/unassign, save and delete. */
 export const AppointmentDetailConfirmModals = memo(function AppointmentDetailConfirmModals({
   pendingStatusChange,
   isUpdating,
@@ -68,7 +71,7 @@ export const AppointmentDetailConfirmModals = memo(function AppointmentDetailCon
       >
         <p className={mutedBodyTextClass}>
           {t('scheduler.detail.statusChangeConfirmMessage', {
-            status: pendingStatusChange ? t(`scheduler.status.${pendingStatusChange.toLowerCase()}`) : '',
+            status: pendingStatusChange ? t(appointmentStatusLabelKey(pendingStatusChange)) : '',
           })}
         </p>
       </ConfirmModal>

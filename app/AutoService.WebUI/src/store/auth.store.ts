@@ -13,11 +13,8 @@ interface AuthState {
   isAuthenticated: boolean;
   /** Whether an auth operation (login, validate, refresh) is in progress. */
   isLoading: boolean;
-  error: string | null;
-  setUser: (user: AuthUser | null) => void;
   setIsAuthenticated: (value: boolean) => void;
   setIsLoading: (value: boolean) => void;
-  setError: (error: string | null) => void;
   /** Marks whether the signed-in user still has to replace a temporary password; ignored while signed out. */
   setMustChangePassword: (value: boolean) => void;
   /** Resets auth state, the private query cache and the other per-user browser state to logged-out defaults. */
@@ -37,19 +34,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  error: null,
 
-  setUser: (user) => {
-    set({ user });
-  },
   setIsAuthenticated: (isAuthenticated) => {
     set({ isAuthenticated });
   },
   setIsLoading: (isLoading) => {
     set({ isLoading });
-  },
-  setError: (error) => {
-    set({ error });
   },
   setMustChangePassword: (mustChangePassword) => {
     set((state) => (state.user === null ? state : { user: { ...state.user, mustChangePassword } }));
@@ -60,7 +50,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       user: null,
       isAuthenticated: false,
-      error: null,
     });
   },
 }));

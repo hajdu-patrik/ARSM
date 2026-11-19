@@ -20,7 +20,7 @@ export const MAX_QUOTE_NOTES_LENGTH = 1000;
 /** Maximum line description length, matching `QuoteEndpoints.MaxLineDescriptionLength`. */
 export const MAX_QUOTE_LINE_DESCRIPTION_LENGTH = 120;
 
-/** Default validity window applied to a new quote, matching the server default (D22). */
+/** Default validity window applied to a new quote, matching the server default. */
 export const DEFAULT_QUOTE_VALIDITY_DAYS = 30;
 
 /** Why the linked appointment locks a quote, matching the API `lockReason` values. */
@@ -108,14 +108,14 @@ export interface CreateQuoteRequest {
   appointmentId: number | null;
 }
 
-/** Request payload for `PUT /api/quotes/{id}`; validity has its own endpoint (D23). */
+/** Request payload for `PUT /api/quotes/{id}`; validity has its own endpoint. */
 export interface UpdateQuoteRequest {
   title: string;
   notes: string | null;
   version: number;
 }
 
-/** Unified line payload for line create and update (D40). */
+/** Unified line payload for line create and update. */
 export interface QuoteLineRequest {
   lineKind: QuoteLineKind;
   quantity: number;

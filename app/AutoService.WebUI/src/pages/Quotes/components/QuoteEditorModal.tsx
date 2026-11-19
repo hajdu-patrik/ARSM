@@ -5,7 +5,7 @@ import { Modal } from '../../../components/common/Modal';
 import type { QuoteDetailDto } from '../../../types/quotes/quotes.types';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 import { mutedSecondaryTextClass, warningNoticeSurfaceClass } from '../../../utils/formStyles';
-import { hasQuoteHeaderChanges } from '../helpers';
+import { canEditQuoteLines, hasQuoteHeaderChanges } from '../helpers';
 import type { QuoteEditorState } from '../hooks/useQuoteEditor';
 import type { QuoteMutationsState } from '../hooks/useQuoteMutations';
 import type { QuoteReferenceData } from '../hooks/useQuoteReferenceData';
@@ -39,6 +39,7 @@ function resolveVehicleLabel(
   return vehicle ? `${vehicle.licensePlate} - ${vehicle.brand} ${vehicle.model}` : fallback;
 }
 
+/** Modal that creates a draft or edits an open quote, passing the busy and lock state to its sections. */
 export const QuoteEditorModal = memo(function QuoteEditorModal({
   t,
   locale,
@@ -51,14 +52,31 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
   const isLocked = quote?.isLocked === true;
   const canEditHeader = !isLocked && (quote === null || quote.status === 'Draft');
   const canChangeValidity = !isLocked && (quote === null || quote.status === 'Draft' || quote.status === 'Sent');
-  const canEditLines = !isLocked && quote !== null && quote.status === 'Draft';
+  const canEditLines = canEditQuoteLines(quote);
   const vehicleLabel = resolveVehicleLabel(quote, editor.vehicle, t('quotes.vehicleUnknown'));
-  const modalTitle = quote ? `${quote.quoteNumber} - ${quote.title}` : t('quotes.newQuote');
+  // One busy flag for the header, the lines and the footer: any quote write in flight locks them all.
+  const isBusy = mutations.isSavingQuote
+    || mutations.isExtendingValidity
+    || mutations.isSavingLine
+    || mutations.isChangingStatus;
+  let modalTitle = t('quotes.newQuote');
+
+  if (editor.isLoadingQuote) {
+    modalTitle = t('quotes.loadingQuote');
+  } else if (quote) {
+    modalTitle = `${quote.quoteNumber} - ${quote.title}`;
+  }
+
+  const handleClose = () => {
+    if (!isBusy) {
+      editor.close();
+    }
+  };
 
   return (
     <Modal
       isOpen={editor.isOpen}
-      onClose={editor.close}
+      onClose={handleClose}
       title={modalTitle}
       widthClassName="max-w-4xl"
       fitViewport
@@ -67,10 +85,12 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
           t={t}
           quote={quote}
           isSaving={mutations.isSavingQuote}
-          isChangingStatus={mutations.isChangingStatus}
+          changingStatusTo={mutations.changingStatusTo}
+          isBusy={isBusy}
+          isLoadingQuote={editor.isLoadingQuote}
           isDownloadingPdf={mutations.isDownloadingPdf}
           canSaveHeader={quote !== null && canEditHeader && hasQuoteHeaderChanges(editor.headerForm, quote)}
-          onClose={editor.close}
+          onClose={handleClose}
           onCreate={mutations.handleCreateQuote}
           onSaveHeader={mutations.handleSaveHeader}
           onChangeStatus={mutations.handleChangeStatus}
@@ -88,7 +108,7 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
       )}
     >
       {editor.isLoadingQuote ? (
-        <p className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('quotes.loadingQuote')}</p>
+        <p role="status" className={`py-6 text-center ${mutedSecondaryTextClass}`}>{t('quotes.loadingQuote')}</p>
       ) : (
         <div className={editorBodyClass}>
           <QuoteEditorHeaderSection
@@ -100,7 +120,8 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
             setForm={editor.setHeaderForm}
             errors={editor.headerErrors}
             appointments={reference.appointments}
-            isSaving={mutations.isSavingQuote}
+            isSaving={isBusy}
+            isExtendingValidity={mutations.isExtendingValidity}
             canEditHeader={canEditHeader}
             canChangeValidity={canChangeValidity}
             onSaveValidity={mutations.handleExtendValidity}
@@ -117,7 +138,7 @@ export const QuoteEditorModal = memo(function QuoteEditorModal({
                 setForm={editor.setLineForm}
                 parts={reference.parts}
                 laborTypes={reference.laborTypes}
-                isSaving={mutations.isSavingLine || reference.isLoadingCatalog}
+                isSaving={isBusy || reference.isLoadingCatalog}
                 canEdit={canEditLines}
                 onStartAddLine={editor.startAddLine}
                 onStartEditLine={editor.startEditLine}

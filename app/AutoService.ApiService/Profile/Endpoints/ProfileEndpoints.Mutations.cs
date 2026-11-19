@@ -16,7 +16,7 @@ public static partial class ProfileEndpoints
     /** The validated profile fields a PUT applies: null email or an unchanged phone means "keep". */
     private sealed record ProfileChanges(string? NewEmail, (bool Changed, string? Value) Phone, FullName Name);
 
-    /** Handles PUT profile updates by validating and applying changed contact/name fields to the current person and, when email/phone changed, the linked identity user, inside a single transaction. */
+    /** Handles PUT profile: validates the changed fields, then applies them to the person and the identity user in one transaction. */
     private static async Task<IResult> UpdateProfileAsync(
         UpdateProfileRequest request,
         HttpContext httpContext,
@@ -93,15 +93,7 @@ public static partial class ProfileEndpoints
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return Results.Ok(new ProfileResponse(
-            person.Id,
-            PersonTypeResolver.Resolve(person),
-            person.Name.FirstName,
-            person.Name.MiddleName,
-            person.Name.LastName,
-            person.Email,
-            person.PhoneNumber,
-            person.ProfilePictureObjectKey is not null || person.ProfilePictureContentType is not null));
+        return Results.Ok(ToProfileResponse(person));
     }
 
     /** The normalized new email when the request changes it, else null; invalid or taken values go into errors. */

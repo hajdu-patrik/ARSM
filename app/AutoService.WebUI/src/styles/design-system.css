@@ -133,11 +133,6 @@
   .arsm-modal-footer-confirm > * {
     min-width: min(100%, 10rem);
   }
-
-  select option:checked {
-    background-color: var(--ui-toggle);
-    color: var(--ui-text);
-  }
 }
 
 @media (max-width: 350px) {

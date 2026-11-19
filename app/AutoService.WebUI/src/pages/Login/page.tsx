@@ -43,7 +43,6 @@ export const Login = memo(function Login() {
   const isEmailMode = loginMethod === 'email';
   const identifierLabel = isEmailMode ? translate('common.fields.email') : translate('login.phone');
   const identifierPlaceholder = isEmailMode ? translate('login.emailPlaceholder') : translate('login.phonePlaceholder');
-  const identifierPattern = isEmailMode ? undefined : String.raw`[0-9+()\s-]+`;
 
   return (
     <AuthPageLayout title={translate('login.title')} subtitle={translate('login.subtitle')}>
@@ -88,7 +87,6 @@ export const Login = memo(function Login() {
             type={isEmailMode ? 'email' : 'tel'}
             autoComplete={isEmailMode ? 'username' : 'tel'}
             inputMode={isEmailMode ? 'email' : 'tel'}
-            pattern={identifierPattern}
             value={identifier}
             onChange={(event) => {
               changeIdentifier(event.target.value);

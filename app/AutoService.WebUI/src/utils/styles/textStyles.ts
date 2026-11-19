@@ -13,7 +13,6 @@ export const baseSectionHeadingTextClass = `text-base ${sectionHeadingToneClass}
 export const compactSectionHeadingTextClass = `text-sm ${sectionHeadingToneClass}`;
 
 /** List item text hierarchy used in compact rows (customers, vehicles, scheduler lists). */
-export const compactListPrimaryTextClass = 'truncate text-sm font-medium text-ui-text';
 export const compactListSecondaryTextClass = 'truncate text-xs text-ui-label';
 /** Same typography and colors as the two list classes above, but long names and emails wrap instead of truncating. */
 export const compactListPrimaryWrapTextClass = 'min-w-0 [overflow-wrap:anywhere] text-sm font-medium text-ui-text';

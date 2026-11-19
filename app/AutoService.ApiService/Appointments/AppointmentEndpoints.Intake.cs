@@ -12,6 +12,7 @@ namespace AutoService.ApiService.Appointments;
 
 public static partial class AppointmentEndpoints
 {
+    /** Creates an appointment from the scheduler intake, creating the customer and vehicle when they are new. */
     private static async Task<IResult> CreateIntakeAsync(
         SchedulerCreateIntakeRequest request,
         ClaimsPrincipal user,
@@ -46,26 +47,13 @@ public static partial class AppointmentEndpoints
             return Results.Unauthorized();
         }
 
-        var customer = await db.Customers
-            .FirstOrDefaultAsync(c => c.Email == normalizedEmail, cancellationToken);
-
-        var linkedMechanicForEmail = customer is null
-            ? await db.Mechanics.FirstOrDefaultAsync(m => m.Email == normalizedEmail, cancellationToken)
-            : null;
-
-        if (customer is null && linkedMechanicForEmail is not null)
-        {
-            var mechanicOwnedCustomerEmail = CustomerOwnerLinking.BuildMechanicOwnedCustomerEmail(linkedMechanicForEmail.Id);
-            customer = await db.Customers
-                .FirstOrDefaultAsync(c => c.Email == mechanicOwnedCustomerEmail, cancellationToken);
-            normalizedEmail = mechanicOwnedCustomerEmail;
-        }
+        var (customer, linkedMechanicForEmail, customerEmail) = await FindIntakeCustomerAsync(normalizedEmail, db, cancellationToken);
 
         var creatingCustomer = customer is null;
         if (creatingCustomer)
         {
             var (customerError, newCustomer) = await CreateIntakeCustomerAsync(
-                request, linkedMechanicForEmail, normalizedEmail, db, logger, cancellationToken);
+                request, linkedMechanicForEmail, customerEmail, db, logger, cancellationToken);
             if (customerError is not null)
             {
                 return customerError;
@@ -84,6 +72,57 @@ public static partial class AppointmentEndpoints
 
         var vehicle = resolvedVehicle!;
 
+        var appointment = NewIntakeAppointment(mechanic, vehicle, taskDescription, scheduledDateUtc, dueDateTimeUtc);
+
+        var saveError = await SaveIntakeAppointmentAsync(appointment, db, logger, cancellationToken);
+        if (saveError is not null)
+        {
+            return saveError;
+        }
+
+        logger.LogInformation(
+            "Intake created appointment {AppointmentId} by mechanic {MechanicId}. CreatedCustomer: {CreatedCustomer}, UsedExistingVehicle: {UsedExistingVehicle}.",
+            appointment.Id,
+            mechanicId,
+            creatingCustomer,
+            usesExistingVehicle);
+        broadcaster.PublishAppointmentChanged(appointment.Id);
+
+        return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
+    }
+
+    /** The customer matching the email, else the one a mechanic with that email owns; also yields the email actually used. */
+    private static async Task<(Customer? Customer, Mechanic? LinkedMechanic, string Email)> FindIntakeCustomerAsync(
+        string normalizedEmail,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var customer = await db.Customers
+            .FirstOrDefaultAsync(c => c.Email == normalizedEmail, cancellationToken);
+
+        var linkedMechanic = customer is null
+            ? await db.Mechanics.FirstOrDefaultAsync(m => m.Email == normalizedEmail, cancellationToken)
+            : null;
+
+        if (customer is null && linkedMechanic is not null)
+        {
+            var mechanicOwnedCustomerEmail = CustomerOwnerLinking.BuildMechanicOwnedCustomerEmail(linkedMechanic.Id);
+            customer = await db.Customers
+                .FirstOrDefaultAsync(c => c.Email == mechanicOwnedCustomerEmail, cancellationToken);
+            return (customer, linkedMechanic, mechanicOwnedCustomerEmail);
+        }
+
+        return (customer, linkedMechanic, normalizedEmail);
+    }
+
+    /** Builds the in-progress appointment of an intake; a vehicle that already has an id is linked by key. */
+    private static Appointment NewIntakeAppointment(
+        Mechanic mechanic,
+        Vehicle vehicle,
+        string taskDescription,
+        DateTime scheduledDateUtc,
+        DateTime dueDateTimeUtc)
+    {
         var appointment = new Appointment
         {
             ScheduledDate = scheduledDateUtc,
@@ -100,8 +139,16 @@ public static partial class AppointmentEndpoints
             appointment.VehicleId = vehicle.Id;
         }
 
-        // The graph is built above and attached inside the cleared tracker: the rows without a key (appointment,
-        // new customer and vehicle) are inserted, the loaded ones (mechanic, existing vehicle) stay unchanged.
+        return appointment;
+    }
+
+    /** Attaches the built graph inside the cleared tracker: keyless rows are inserted, loaded ones stay unchanged. */
+    private static async Task<IResult?> SaveIntakeAppointmentAsync(
+        Appointment appointment,
+        AutoServiceDbContext db,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
         try
         {
             await db.ExecuteInTransactionAsync(
@@ -113,21 +160,13 @@ public static partial class AppointmentEndpoints
                     return true;
                 },
                 cancellationToken);
+
+            return null;
         }
         catch (DbUpdateException ex) when (UniqueConstraintDetection.IsUniqueConstraintViolation(ex))
         {
             logger.LogWarning("Intake creation failed due to unique constraint conflict.");
             return ApiProblem.Conflict("Unable to create intake due to conflicting customer or vehicle data.");
         }
-
-        logger.LogInformation(
-            "Intake created appointment {AppointmentId} by mechanic {MechanicId}. CreatedCustomer: {CreatedCustomer}, UsedExistingVehicle: {UsedExistingVehicle}.",
-            appointment.Id,
-            mechanicId,
-            creatingCustomer,
-            usesExistingVehicle);
-        PublishAppointmentChanged(broadcaster, appointment.Id);
-
-        return Results.Created($"/api/appointments/{appointment.Id}", ToDto(appointment));
     }
 }

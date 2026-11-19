@@ -12,7 +12,7 @@ import type { AuthQueryScope } from '../../../services/cache/queryKeys';
 import { schedulerQueries } from '../../../services/queries/scheduler.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
-import { isScheduledToday } from '../utils/scheduler-datetime';
+import { isScheduledOn, startOfDayTimestamp } from '../utils/scheduler-datetime';
 import { foldReadStatus, isInitialLoading, type ReadStatus } from './readStatus';
 import {
   EMPTY_APPOINTMENTS,
@@ -27,6 +27,8 @@ import { useIsAppointmentLiveConnected, useSchedulerLiveRefresh } from './useSch
 interface UseSchedulerDataSyncArgs {
   readonly calendarYear: number;
   readonly calendarMonth: number;
+  /** The page clock (ms); the day it falls on is "today". */
+  readonly now: number;
   readonly showErrorToast: (key: string) => void;
 }
 
@@ -63,8 +65,10 @@ function monthReadOptions(scope: AuthQueryScope | null, view: CalendarMonthView,
 export function useSchedulerDataSync({
   calendarYear,
   calendarMonth,
+  now,
   showErrorToast,
 }: UseSchedulerDataSyncArgs): SchedulerAppointments {
+  const todayStart = startOfDayTimestamp(now);
   const scope = useAuthQueryScope();
   // While the live stream is open its events refresh the reads, so the interval is only a long safety net.
   const refetchInterval = useIsAppointmentLiveConnected()
@@ -76,7 +80,7 @@ export function useSchedulerDataSync({
   const currentMonthQuery = useQuery(monthReadOptions(scope, currentView, refetchInterval));
   const nextMonthQuery = useQuery(monthReadOptions(scope, nextView, refetchInterval));
   // The real current month: it shares a query with the window while inside it, and is one more read once the user paged away.
-  const todayMonthQuery = useQuery(monthReadOptions(scope, getMonthViewOfDate(new Date()), refetchInterval));
+  const todayMonthQuery = useQuery(monthReadOptions(scope, getMonthViewOfDate(new Date(todayStart)), refetchInterval));
 
   const previousMonth = previousMonthQuery.data ?? EMPTY_APPOINTMENTS;
   const currentMonth = currentMonthQuery.data ?? EMPTY_APPOINTMENTS;
@@ -91,8 +95,9 @@ export function useSchedulerDataSync({
     [calendarAppointments, calendarYear, calendarMonth],
   );
   const todayAppointments = useMemo(
-    () => mergeUniqueAppointments(calendarAppointments, todayMonth).filter(isScheduledToday),
-    [calendarAppointments, todayMonth],
+    () => mergeUniqueAppointments(calendarAppointments, todayMonth)
+      .filter((appointment) => isScheduledOn(appointment, new Date(todayStart))),
+    [calendarAppointments, todayMonth, todayStart],
   );
 
   const monthReads = [previousMonthQuery, currentMonthQuery, nextMonthQuery];

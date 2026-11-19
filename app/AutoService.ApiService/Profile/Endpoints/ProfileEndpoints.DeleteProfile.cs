@@ -87,6 +87,8 @@ public static partial class ProfileEndpoints
             return outcome.Failure;
         }
 
+        sessionRevocation.RevokeAll(person.Id);
+
         await ProfilePictureObjectCleanup.TryDeleteAsync(
             storage,
             outcome.PictureObjectKey,
@@ -101,7 +103,6 @@ public static partial class ProfileEndpoints
             await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
         }
 
-        sessionRevocation.RevokeAll(person.Id);
         AuthEndpoints.ClearSessionCookies(httpContext.Response);
 
         return Results.Ok(new { message = "Profile deleted successfully." });

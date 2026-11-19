@@ -14,7 +14,7 @@ import { QUOTE_WRITE_NETWORK_MODE } from './quoteMutation.helpers';
 import { useQuoteCache } from './useQuoteCache';
 
 /** The quote whose send the dialog is holding: its id, the vehicle that leads to the customer and the version to send with. */
-export interface CustomerEmailTarget {
+interface CustomerEmailTarget {
   readonly quoteId: number;
   readonly vehicleId: number;
   readonly version: number;
@@ -65,6 +65,7 @@ function isEmailFieldKey(key: string): boolean {
   return key.startsWith('common.validation.') || key === 'customers.errors.emailExists';
 }
 
+/** State and save action of the customer e-mail dialog that a refused quote send opens. */
 export function useQuoteCustomerEmail({ showErrorToast }: UseQuoteCustomerEmailParams) {
   const { invalidateCustomers } = useQuoteCache();
   const [target, setTarget] = useState<CustomerEmailTarget | null>(null);

@@ -6,6 +6,8 @@
 @AdminEmail = {{$processEnv ARSM_TEST_ADMIN_EMAIL}}
 @AdminPassword = {{$processEnv ARSM_TEST_ADMIN_PASSWORD}}
 @RunId = {{$timestamp}}
+@FixtureCustomerEmail = company.statuses.customer.{{RunId}}@example.test
+@FixtureVehicleVin = TST{{RunId.toString().slice(-10)}}0732
 @ThisYear = {{new Date().getUTCFullYear()}}
 @ThisMonth = {{new Date().getUTCMonth() + 1}}
 
@@ -31,15 +33,29 @@ Content-Type: application/json
 
 ###
 
-### [Setup][Reporting] Resolve the anchor vehicle from the fixture anchor quote (200 expected)
-# @name anchorQuotes
-GET {{AutoService_ApiService_HostAddress}}/api/quotes?search=ARSM%20fixture%20anchor%20quote&pageSize=500
+### [Setup][Reporting] Create the disposable customer (201 expected)
+# @name customer
+POST {{AutoService_ApiService_HostAddress}}/api/customers
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
 
-{{
-  exports.AnchorVehicleId = anchorQuotes.items.find(q => q.title === 'ARSM fixture anchor quote').vehicleId;
-}}
+{ "firstName": "CompanyStatuses", "middleName": null, "lastName": "Fixture", "email": "{{FixtureCustomerEmail}}", "phoneNumber": null }
 
-?? status == 200
+?? status == 201
+
+###
+
+### [Setup][Reporting] Create the customer vehicle (201 expected)
+# @name vehicle
+POST {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}/vehicles
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+Content-Type: application/json
+
+{ "licensePlate": "STR-{{RunId}}", "vin": "{{FixtureVehicleVin}}", "brand": "Skoda", "model": "Octavia", "year": 2020, "mileageKm": 45000, "enginePowerKw": 110, "drivetrainType": "Petrol" }
+
+?? status == 201
 
 ###
 
@@ -53,7 +69,7 @@ GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
 
 ### [Setup][Reporting] Create the draft that gets rejected (201 expected)
 # @name quoteB
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -79,7 +95,7 @@ Content-Type: application/json
 
 ### [Setup][Reporting] Create the draft that stays pending (201 expected)
 # @name quoteD
-POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{AnchorVehicleId}}/quotes
+POST {{AutoService_ApiService_HostAddress}}/api/vehicles/{{vehicle.id}}/quotes
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
 Content-Type: application/json
@@ -180,6 +196,15 @@ GET {{AutoService_ApiService_HostAddress}}/api/company-results?year={{ThisYear}}
 ?? js (response.parsedBody.draftQuoteCount - baseMonth.draftQuoteCount == -2) == true
 ?? js (response.parsedBody.rejected.quoteCount - baseMonth.rejected.quoteCount == 1 && response.parsedBody.pending.quoteCount - baseMonth.pending.quoteCount == 1) == true
 ?? js (response.parsedBody.accepted.quoteCount == baseMonth.accepted.quoteCount && response.parsedBody.months[0].acceptedQuoteCount == baseMonth.months[0].acceptedQuoteCount) == true
+
+###
+
+### [Cleanup][Reporting] Delete the disposable customer, cascading vehicle and quotes (204 expected)
+DELETE {{AutoService_ApiService_HostAddress}}/api/customers/{{customer.id}}
+Origin: {{WebUI_Origin}}
+X-CSRF-Token: {{CsrfToken}}
+
+?? status == 204
 
 ###
 

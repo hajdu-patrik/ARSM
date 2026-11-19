@@ -43,7 +43,7 @@ export const CustomerListSection = memo(function CustomerListSection({
     <section className="space-y-3">
       <div ref={listRef} className="flex flex-col gap-3">
         {isLoadingCustomers && (
-          <div className={centeredLoadingWrapperClass}>
+          <div role="status" aria-label={t('customers.loadingCustomers')} className={centeredLoadingWrapperClass}>
             <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
           </div>
         )}

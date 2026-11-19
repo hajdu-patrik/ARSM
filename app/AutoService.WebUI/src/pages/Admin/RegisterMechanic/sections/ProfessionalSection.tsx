@@ -29,6 +29,7 @@ interface ProfessionalSectionProps {
   readonly onToggleExpertise: (value: string) => void;
 }
 
+/** Renders the specialization dropdown and the expertise checkbox tiles with their inline errors. */
 export const ProfessionalSection = memo(function ProfessionalSection({
   specialization,
   expertise,
@@ -41,6 +42,7 @@ export const ProfessionalSection = memo(function ProfessionalSection({
   const idPrefix = useId();
   const specializationErrorId = `${idPrefix}-specialization-error`;
   const expertiseErrorId = `${idPrefix}-expertise-error`;
+  const expertiseLabelId = `${idPrefix}-expertise-label`;
   const specializationA11y = fieldErrorA11yProps(specializationErrorId, fieldErrors.specialization);
   const specializationOptions = SPECIALIZATION_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }));
 
@@ -67,8 +69,8 @@ export const ProfessionalSection = memo(function ProfessionalSection({
         <FieldErrorText id={specializationErrorId} messageKey={fieldErrors.specialization} />
       </div>
 
-      <div>
-        <p className={labelClass}>
+      <div role="group" aria-labelledby={expertiseLabelId}>
+        <p id={expertiseLabelId} className={labelClass}>
           {t('admin.expertiseLabel')} * <span className="text-xs font-normal">({t('admin.expertiseHint')})</span>
         </p>
         {/* Phone: tiles fill each row, two equal halves where the labels fit and a whole row for a longer one, so no row ends ragged

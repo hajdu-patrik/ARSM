@@ -95,6 +95,7 @@ export const SettingsPage = memo(function SettingsPage() {
     pictureKey,
     pictureVersion,
     pictureSource,
+    pictureCropKey,
     isPictureRemoveConfirmOpen,
     setIsPictureRemoveConfirmOpen,
     handleSelectPicture,
@@ -123,7 +124,7 @@ export const SettingsPage = memo(function SettingsPage() {
 
   if (isLoadingProfile) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 py-24">
+      <div role="status" aria-label={t('settings.loadingProfile')} className="flex flex-col items-center justify-center gap-3 py-24">
         <div className={`h-8 w-8 ${loadingSpinnerClass}`} />
       </div>
     );
@@ -209,10 +210,15 @@ export const SettingsPage = memo(function SettingsPage() {
       </div>
 
       <ProfilePictureCropModal
+        key={pictureCropKey}
         isOpen={Boolean(pictureSource)}
         imageSrc={pictureSource}
         isSubmitting={isUploadingPicture}
-        onCancel={closePictureCropModal}
+        onCancel={() => {
+          if (!isUploadingPicture) {
+            closePictureCropModal();
+          }
+        }}
         onConfirm={handleConfirmPictureCrop}
       />
 

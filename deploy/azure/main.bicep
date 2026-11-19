@@ -85,7 +85,7 @@ param bootstrapAdminPassword string
 @description('Access token of the web gate, at least 32 characters.')
 param gateToken string
 
-@description('Keep one API replica running (default); false lets it scale to zero (cold start of roughly 10-20 s). Never more than one replica.')
+@description('Keep one API replica running (default); false lets it scale to zero (cold start of about 41 s; production runs scale-to-zero). Never more than one replica.')
 param apiAlwaysOn bool = true
 
 @description('Keep one web (gate + Nginx) replica running; false (default) scales it to zero when idle, a cold start of about 2 s.')

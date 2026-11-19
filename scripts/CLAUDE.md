@@ -28,14 +28,14 @@
   `setupPassed` reports it. HTTPYAC runs with `--output short --filter only-failed`, and every
   failed request is listed under `failedHttpRequests` (file, line, title, actual status - never bodies or
   headers); a regex fallback in `httpyac_summary.py` still finds them when the sanitizer breaks the JSON.
+  The Playwright target passes `ARSM_E2E_SPECS` (space-separated spec paths, set by
+  `select-e2e-specs.py --run`) through to `npm run e2e --`, and defaults `PLAYWRIGHT_WORKERS` to 3.
 - `migrate-profile-pictures-to-object-storage.py`: verifies every stored profile-picture object key
   resolves to a real object in object storage. Reuses the runner's secret loading and output
   masking, and delegates the actual check to the API project's `--migrate-profile-pictures`
   entrypoint so verification reads the bucket the same way the serving path does. `--verify` is
   accepted for backwards compatibility; verification runs either way. Read-only: touches neither
   the database nor the bucket. Report: `tests/.artifacts/profile-picture-migration-summary.json`.
-  The Playwright target passes `ARSM_E2E_SPECS` (space-separated spec paths, set by
-  `select-e2e-specs.py --run`) through to `npm run e2e --`, and defaults `PLAYWRIGHT_WORKERS` to 3.
 - `validate.py`: the deterministic validation gate that replaced the LLM `validate` stage. Scoped to the
   diff against `--base` (default `HEAD`, untracked files included) or the whole tree with `--all`; stages:
   size (source > 500, test > 250, C# type > 300 lines; migrations and designer files excluded), shadows
@@ -50,8 +50,10 @@
   (install: `git config core.hooksPath .githooks`; the hook always runs every stage). Usage:
   `python scripts/pre-push.py [--skip-e2e] [--skip-api-suites] [--only <validate|backend|frontend|e2e|api-suites>]`.
   Stages, fail fast: validate (`validate.py --all --security`), backend (the tests/Scripts unittest suite, locked restore, build, test, EF
-  pending-model check), frontend (`npm ci` only when the lockfile differs from upstream, audit, tsc, lint,
-  build), e2e (`select-e2e-specs.py --run`, diffed against the upstream ref), api-suites
+  pending-model check), frontend (`npm ci` only when `node_modules` is missing or an installed entry of its hidden
+  `node_modules/.package-lock.json` differs from `package-lock.json` (`prepush/frontend.py` `needs_install`; lock-only optional or
+  platform-specific entries are fine), then `npm audit signatures`, tsc, lint, build, `playwright test --list` and
+  `npm audit --audit-level=high`), e2e (`select-e2e-specs.py --run`, diffed against the upstream ref), api-suites
   (`run-local-test-suite.py http sql` on throwaway `arsm-prepush-postgres` (port 15432) and
   `arsm-prepush-s3` (port 19000), with the API on its own `https://localhost:15200`, local secrets; always
   cleaned up). These ports sit below the Windows dynamic range (49152+), where outbound sockets once took the
@@ -89,8 +91,8 @@
   `.vscode/`, `.githooks/` and `tests/Scripts/` need no heavy job, a path without a rule needs all of them, and an empty
   or unknown base runs every job. A new top-level path therefore stays safe until it gets a rule in `PREFIX_GROUPS`.
 - `select-e2e-specs.py`: maps the WebUI diff to the Playwright specs that cover it (`FEATURE_SPECS`,
-  changed specs, and the specs that import a changed page object); any file outside those rules selects
-  the full suite. Prints the selection, or runs it through the canonical runner with `--run`. A new spec
+  changed specs that still exist, and the specs that import a changed page object); Markdown files select nothing, and
+  any other file outside those rules selects the full suite. Prints the selection, or runs it through the canonical runner with `--run`. A new spec
   that covers a page folder joins that folder's tuple, otherwise only a full-suite change ever runs it. A rule
   hit under `src/` also selects the `accessibility` axe sweep, because it covers every route.
 

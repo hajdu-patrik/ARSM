@@ -26,7 +26,7 @@ function splitDuration(absDiffMs: number): { days: number; hours: number; minute
 }
 
 /** Computes due state: a closed appointment shows its outcome, an open one the overdue/remaining time (amber under a day). */
-export function getDueState(dueDateTime: string, status: AppointmentStatus): DueState {
+export function getDueState(dueDateTime: string, status: AppointmentStatus, nowTimestamp: number): DueState {
   if (status === 'Completed') {
     return { isOverdue: false, toneClassName: toneTextClasses.success, labelKey: 'scheduler.due.completed' };
   }
@@ -46,7 +46,6 @@ export function getDueState(dueDateTime: string, status: AppointmentStatus): Due
     };
   }
 
-  const nowTimestamp = Date.now();
   const diffMs = dueTimestamp - nowTimestamp;
 
   if (diffMs < 0) {

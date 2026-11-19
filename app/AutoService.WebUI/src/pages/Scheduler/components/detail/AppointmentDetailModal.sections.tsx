@@ -218,7 +218,6 @@ const DueSection = memo(function DueSection({
             type="button"
             data-testid="appointment-detail-open-quote"
             className={compactChipNeutralButtonClass}
-            title={t('common.actions.openQuote')}
             aria-label={t('common.actions.openQuote')}
             onClick={onOpenQuote}
           >
@@ -238,23 +237,25 @@ const DueSection = memo(function DueSection({
         {t('scheduler.due.exact', { date: dueDateLabel })}
       </p>
       {isEditing && (
-        <label className={`mt-2 flex flex-col gap-1 ${compactPrimaryValueTextClass}`}>
-          <span className={mutedMetaTextClass}>
-            {t('scheduler.intake.dueDateTime')}
-          </span>
-          <input
-            type="datetime-local"
-            data-testid="appointment-detail-due-datetime"
-            value={dueDateTime}
-            min={minDueDateTime}
-            onChange={(event) => {
-              onDueDateTimeChange(event.target.value);
-            }}
-            className={inputClassCompact}
-            {...fieldErrorA11yProps(errorId, errorKey)}
-          />
+        <>
+          <label className={`mt-2 flex flex-col gap-1 ${compactPrimaryValueTextClass}`}>
+            <span className={mutedMetaTextClass}>
+              {t('scheduler.intake.dueDateTime')}
+            </span>
+            <input
+              type="datetime-local"
+              data-testid="appointment-detail-due-datetime"
+              value={dueDateTime}
+              min={minDueDateTime}
+              onChange={(event) => {
+                onDueDateTimeChange(event.target.value);
+              }}
+              className={inputClassCompact}
+              {...fieldErrorA11yProps(errorId, errorKey)}
+            />
+          </label>
           <FieldErrorText id={errorId} messageKey={errorKey} />
-        </label>
+        </>
       )}
     </div>
   );
@@ -290,7 +291,6 @@ const VehicleSection = memo(function VehicleSection({
             type="button"
             data-testid="appointment-detail-edit-vehicle"
             className={compactChipNeutralButtonClass}
-            title={t('common.actions.editVehicle')}
             aria-label={t('common.actions.editVehicle')}
             onClick={onEditVehicle}
           >
@@ -394,18 +394,18 @@ const TaskSection = memo(function TaskSection({
       </h3>
       {isEditing ? (
         <>
-        <textarea
-          aria-labelledby={headingId}
-          {...fieldErrorA11yProps(errorId, errorKey)}
-          value={taskDescription}
-          onChange={(event) => {
-            onTaskChange(event.target.value);
-          }}
-          rows={3}
-          maxLength={TASK_DESCRIPTION_MAX_LENGTH}
-          className={textareaClass}
-        />
-        <FieldErrorText id={errorId} messageKey={errorKey} />
+          <textarea
+            aria-labelledby={headingId}
+            {...fieldErrorA11yProps(errorId, errorKey)}
+            value={taskDescription}
+            onChange={(event) => {
+              onTaskChange(event.target.value);
+            }}
+            rows={3}
+            maxLength={TASK_DESCRIPTION_MAX_LENGTH}
+            className={textareaClass}
+          />
+          <FieldErrorText id={errorId} messageKey={errorKey} />
         </>
       ) : (
         <p className={`break-words ${compactPrimaryValueTextClass}`}>{displayTask}</p>

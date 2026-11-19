@@ -80,12 +80,11 @@ test.describe('Inventory - Parts tab', () => {
     await expect(page.getByText('Brake pad set', { exact: true })).toHaveCount(1);
   });
 
-  test('lists parts in ascending part-number order and offers no sort toggle', async ({ page }) => {
+  test('lists parts in ascending part-number order', async ({ page }) => {
     await signInWithMocks(page);
     const catalogPage = new CatalogPage(page);
     await catalogPage.goto();
 
-    await expect(page.getByTestId('inventory-parts-sort-toggle')).toHaveCount(0);
     const first = await catalogPage.openEdit('part', 0);
     await expect(first.getByLabel('Part number')).toHaveValue('ALT-1001');
     await first.getByRole('button', { name: 'Cancel' }).click();

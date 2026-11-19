@@ -13,6 +13,7 @@ import {
   inputGroupContainerClass,
   largeIconClass,
   mutedBodyTextClass,
+  mutedMetaTextClass,
   passwordToggleButtonClass,
   secondaryButtonClass,
 } from '../../utils/formStyles';
@@ -30,6 +31,7 @@ interface DeleteProfileConfirmModalProps {
   readonly onConfirm: () => void;
 }
 
+/** Asks for the password twice before a self-delete, with autofill-resistant fields and inline errors. */
 export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal({
   isOpen,
   isDeleting,
@@ -57,19 +59,17 @@ export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal
     ? 'settings.deletePasswordsDoNotMatch'
     : undefined;
 
-  let deleteConfirmDisabledReasonKey: string | null = null;
-  if (isDeleting) {
-    deleteConfirmDisabledReasonKey = 'common.actions.deleting';
-  } else if (!deletePassword.trim() || !deletePasswordConfirm.trim()) {
-    deleteConfirmDisabledReasonKey = 'settings.fillDeletePasswordsToContinue';
-  } else if (deletePassword !== deletePasswordConfirm) {
-    deleteConfirmDisabledReasonKey = 'settings.deletePasswordsDoNotMatch';
+  const fillHintId = `${idPrefix}-fill-hint`;
+  const showFillHint = !isDeleting && (!deletePassword.trim() || !deletePasswordConfirm.trim());
+  let confirmButtonDescribedBy: string | undefined;
+  if (showFillHint) {
+    confirmButtonDescribedBy = fillHintId;
+  } else if (confirmMismatchMessageKey) {
+    confirmButtonDescribedBy = confirmErrorId;
   }
 
-  const deleteConfirmDisabledTitle = deleteConfirmDisabledReasonKey ? t(deleteConfirmDisabledReasonKey) : undefined;
-
   useEffect(() => {
-    if (!isOpen || (deletePassword.length === 0 && deletePasswordConfirm.length === 0)) {
+    if (!isOpen) {
       const frameId = globalThis.requestAnimationFrame(() => {
         setIsDeletePasswordFieldLocked(true);
         setIsDeletePasswordConfirmFieldLocked(true);
@@ -83,7 +83,7 @@ export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal
     }
 
     return undefined;
-  }, [deletePassword, deletePasswordConfirm, isOpen]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -129,18 +129,17 @@ export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal
           >
             {t('common.actions.cancel')}
           </button>
-          <div title={deleteConfirmDisabledTitle}>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={isDeleting || isDeleteConfirmationInvalid}
-              aria-busy={isDeleting}
-              className={dangerButtonClass}
-            >
-              <Trash2 className={defaultIconClass} />
-              <span>{isDeleting ? t('common.actions.deleting') : t('settings.confirmDeleteProfile')}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting || isDeleteConfirmationInvalid}
+            aria-busy={isDeleting}
+            aria-describedby={confirmButtonDescribedBy}
+            className={dangerButtonClass}
+          >
+            <Trash2 className={defaultIconClass} />
+            <span>{isDeleting ? t('common.actions.deleting') : t('settings.confirmDeleteProfile')}</span>
+          </button>
         </>
       )}
     >
@@ -247,6 +246,12 @@ export const DeleteProfileConfirmModal = memo(function DeleteProfileConfirmModal
         </div>
         <FieldErrorText id={confirmErrorId} messageKey={confirmMismatchMessageKey} />
       </div>
+
+      {showFillHint && (
+        <p id={fillHintId} className={`mt-4 text-left ${mutedMetaTextClass}`}>
+          {t('settings.fillDeletePasswordsToContinue')}
+        </p>
+      )}
     </Modal>
   );
 });

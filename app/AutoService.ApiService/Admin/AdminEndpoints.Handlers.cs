@@ -1,4 +1,5 @@
 using AutoService.ApiService.Data;
+using AutoService.ApiService.Domain;
 using AutoService.ApiService.Pagination;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
@@ -7,12 +8,11 @@ namespace AutoService.ApiService.Admin;
 
 public static partial class AdminEndpoints
 {
-    /** Lists mechanics for the admin console, flagging each row with its Admin-role status and whether it has a stored profile picture. */
+    /** Lists mechanics for the admin console with each row's Admin-role flag and profile-picture flag. */
     private static async Task<IResult> ListMechanicsAsync(
         [Description("1-based page number; values below 1 become 1. Default 1.")] int? page,
         [Description("Page size, clamped to 1..500. Default 20.")] int? pageSize,
         [Description("Optional case-insensitive substring filter, trimmed, max 100 characters.")] string? search,
-        HttpContext httpContext,
         AutoServiceDbContext db,
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
@@ -33,19 +33,11 @@ public static partial class AdminEndpoints
         var term = SearchTerm.Normalize(search);
         if (term is not null)
         {
-            query = query.Where(m =>
-                m.Name.FirstName.ToUpper().Contains(term) ||
-                (m.Name.MiddleName != null && m.Name.MiddleName.ToUpper().Contains(term)) ||
-                m.Name.LastName.ToUpper().Contains(term) ||
-                (m.Name.FirstName + " " + m.Name.LastName).ToUpper().Contains(term) ||
-                (m.Name.MiddleName != null &&
-                 (m.Name.FirstName + " " + m.Name.MiddleName + " " + m.Name.LastName).ToUpper().Contains(term)) ||
-                (m.Name.LastName + " " + m.Name.FirstName).ToUpper().Contains(term) ||
-                (m.Name.MiddleName != null &&
-                 (m.Name.LastName + " " + m.Name.FirstName + " " + m.Name.MiddleName).ToUpper().Contains(term)) ||
-                m.Email.ToUpper().Contains(term) ||
-                (m.PhoneNumber != null && m.PhoneNumber.ToUpper().Contains(term)) ||
-                m.Specialization.ToString().ToUpper().Contains(term));
+            query = query.Where(PersonNameSearch.Or(
+                PersonNameSearch.Matches<Mechanic>(term),
+                m => m.Email.ToUpper().Contains(term) ||
+                    (m.PhoneNumber != null && m.PhoneNumber.ToUpper().Contains(term)) ||
+                    m.Specialization.ToString().ToUpper().Contains(term)));
         }
 
         var ordered = query.OrderBy(m => m.Name.LastName)
@@ -62,7 +54,7 @@ public static partial class AdminEndpoints
                 m.PhoneNumber,
                 m.Specialization.ToString(),
                 m.IdentityUserId != null && adminIdentityUserIdSet.Contains(m.IdentityUserId),
-                m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
+                ProjectionFormat.HasProfilePicture(m.ProfilePictureObjectKey)))
             .ToPagedResultAsync(request, cancellationToken);
 
         logger.LogInformation("Listed mechanics for admin request. Count: {Count}.", result.Items.Count);

@@ -1,8 +1,10 @@
 /** Admin password-reset flow of the mechanic roster: the chosen mechanic, the temporary password, the request and its toasts. */
 import { useCallback, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
+import { queryKeys } from '../../../services/cache/queryKeys';
 import { adminService, type MechanicListItem } from '../../../services/admin/admin.service';
+import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import {
   extractServerFieldErrors,
   getFirstFieldErrorMessage,
@@ -43,6 +45,8 @@ function getResetErrorKey(error: unknown): string {
 
 /** Owns the reset dialog state and the reset mutation, with its success, warning and error toasts. */
 export function useMechanicPasswordReset({ showErrorToast, showSuccessToast, showWarningToast }: UseMechanicPasswordResetParams) {
+  const queryClient = useQueryClient();
+  const scope = useAuthQueryScope();
   const [resetTarget, setResetTarget] = useState<MechanicListItem | null>(null);
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | undefined>(undefined);
@@ -59,6 +63,16 @@ export function useMechanicPasswordReset({ showErrorToast, showSuccessToast, sho
       setTemporaryPassword('');
     },
     onError: (error) => {
+      // The mechanic is already gone: refresh the roster and drop the dialog.
+      if (isAxiosError(error) && error.response?.status === 404) {
+        if (scope !== null) {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.admin.mechanics(scope) });
+        }
+
+        setResetTarget(null);
+        setTemporaryPassword('');
+      }
+
       const messageKey = getResetErrorKey(error);
 
       setPasswordError(isFieldMessageKey(messageKey) ? messageKey : undefined);

@@ -24,6 +24,8 @@ export interface CatalogItemConfig<TDto> {
   readonly updatedKey: string;
   readonly deletedKey: string;
   readonly saveFailedKey: string;
+  /** Shown when the item no longer exists (404). */
+  readonly notFoundKey: string;
   readonly deleteFailedKey: string;
 }
 
@@ -35,6 +37,7 @@ const toLaborTypeRequest = ({ identifier, name, rate, vatRatePercent }: CatalogI
   { code: identifier, name, hourlyNetRate: rate, vatRatePercent }
 );
 
+/** Parts entry of the generic catalog item flow. */
 export const partCatalogItemConfig: CatalogItemConfig<PartDto> = {
   kind: 'part',
   tab: partCatalogTabConfig,
@@ -49,9 +52,11 @@ export const partCatalogItemConfig: CatalogItemConfig<PartDto> = {
   updatedKey: 'inventory.toasts.partUpdated',
   deletedKey: 'inventory.toasts.partDeleted',
   saveFailedKey: 'inventory.errors.partSaveFailed',
+  notFoundKey: 'inventory.errors.partNotFound',
   deleteFailedKey: 'inventory.errors.partDeleteFailed',
 };
 
+/** Labor types entry of the generic catalog item flow. */
 export const laborTypeCatalogItemConfig: CatalogItemConfig<LaborTypeDto> = {
   kind: 'laborType',
   tab: laborTypeCatalogTabConfig,
@@ -66,5 +71,6 @@ export const laborTypeCatalogItemConfig: CatalogItemConfig<LaborTypeDto> = {
   updatedKey: 'inventory.toasts.laborTypeUpdated',
   deletedKey: 'inventory.toasts.laborTypeDeleted',
   saveFailedKey: 'inventory.errors.laborTypeSaveFailed',
+  notFoundKey: 'inventory.errors.laborTypeNotFound',
   deleteFailedKey: 'inventory.errors.laborTypeDeleteFailed',
 };

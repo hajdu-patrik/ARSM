@@ -8,6 +8,7 @@ import { errorToastMessage, toastMessage } from './support/toast';
 
 const PASSWORD = 'StrongPass1!';
 
+/** Opens the login page in the given language with the API mocked and waits for the identifier field. */
 async function openLogin(page: Page, language: TestLanguage = 'en'): Promise<void> {
   await primeBrowserState(page, { language });
   await installApiMocks(page, { profileEmail: 'login.validation@example.test' });
@@ -15,6 +16,7 @@ async function openLogin(page: Page, language: TestLanguage = 'en'): Promise<voi
   await expect(page.locator('#identifier')).toBeVisible();
 }
 
+/** Resolves with the next `POST /api/auth/login` request the page sends. */
 function waitForLoginRequest(page: Page) {
   return page.waitForRequest((request) => request.method() === 'POST' && new URL(request.url()).pathname === '/api/auth/login');
 }
@@ -113,6 +115,7 @@ test.describe('Login form controls', () => {
     await expect(email).toHaveAttribute('aria-pressed', 'false');
     await expect(identifier).toHaveValue('');
     await expect(identifier).toHaveAttribute('type', 'tel');
+    expect(await identifier.getAttribute('pattern'), 'a browser pattern would block the phone check of the app').toBeNull();
     await expect(identifier).not.toHaveAttribute('aria-invalid', 'true');
   });
 

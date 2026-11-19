@@ -1,9 +1,7 @@
 /** Shared helpers of the catalog and quote paging specs: the booted page, the settled page size, the scroll overflow. */
 import { expect, type Locator, type Page } from '@playwright/test';
-import { AuthPage } from '../pages/auth.page';
-import { installApiMocks } from './api-mocks';
-import { getAppointmentFlowEnv } from './e2e-env';
 import type { PaginationControls } from './pagination';
+import { signInWithMocks } from './sign-in';
 import type { MockApiState } from './test-data';
 
 /** Waits until the rows and the indicator agree on one page size above 1, and returns that size. */
@@ -32,8 +30,5 @@ export async function bootPagedPage(
   seed?: (state: MockApiState) => void,
 ): Promise<void> {
   await page.setViewportSize(viewport);
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  seed?.(state);
-  await new AuthPage(page).loginAsMechanic(env);
+  await signInWithMocks(page, {}, 'en', seed);
 }

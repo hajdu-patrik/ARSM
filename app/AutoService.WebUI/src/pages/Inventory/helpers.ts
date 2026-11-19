@@ -35,8 +35,9 @@ export type CatalogFieldName = 'identifier' | 'name' | 'rate' | 'vatRate';
 export type CatalogFieldErrors = Partial<Record<CatalogFieldName, string>>;
 
 /** The current value of every validated field as text, which a pinned message is compared with. */
-export type CatalogFieldValues = Readonly<Record<CatalogFieldName, string>>;
+type CatalogFieldValues = Readonly<Record<CatalogFieldName, string>>;
 
+/** Reads every validated field of the form as text. */
 export function readCatalogFieldValues(form: CatalogFormState): CatalogFieldValues {
   return { identifier: form.identifier, name: form.name, rate: form.rate, vatRate: String(form.vatRatePercent) };
 }
@@ -88,10 +89,6 @@ export function mapCatalogValidationMessageToKey(message: string): string {
     return 'common.validation.fieldRequired';
   }
 
-  if (normalized.includes('part number is required') || normalized.includes('code is required')) {
-    return 'common.validation.fieldRequired';
-  }
-
   if (normalized.includes('partnumber must be at most') || normalized.includes('code must be at most')) {
     return 'inventory.errors.identifierTooLong';
   }
@@ -131,11 +128,14 @@ export function mapCatalogValidationMessageToKey(message: string): string {
   return 'inventory.errors.saveFailed';
 }
 
-/** Mirrors `Pricing/PricingCalculator.GrossUnitPrice` exactly: round(net * (1 + vat/100), 2); the only allowed client-side gross computation (CLAUDE.md). */
+/** Mirrors `Pricing/PricingCalculator.GrossUnitPrice`: round(net * (1 + vat/100), 2); the only client-side gross computation. */
 export function computeLiveGrossPreview(netAmount: number, vatRatePercent: number): number {
   if (Number.isNaN(netAmount)) {
     return 0;
   }
 
-  return Math.round(netAmount * (1 + vatRatePercent / 100) * 100) / 100;
+  // Integer cents, so the half-cent rounding equals the server's decimal AwayFromZero.
+  const grossNumerator = Math.round(netAmount * 100) * (100 + vatRatePercent);
+
+  return (Math.sign(grossNumerator) * Math.floor((Math.abs(grossNumerator) + 50) / 100)) / 100;
 }

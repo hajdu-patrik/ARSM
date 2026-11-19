@@ -160,6 +160,9 @@ public static partial class QuoteEndpoints
         QuoteSendRateLimiter sendRateLimiter,
         CancellationToken cancellationToken)
     {
+        // The recipient checks and the mail read the customer, which the detail load no longer includes.
+        await db.Entry(quote.Vehicle).Reference(v => v.Customer).LoadAsync(cancellationToken);
+
         var preconditionError = GetSendPreconditionError(quote, version, DateTime.UtcNow);
         if (preconditionError is not null)
         {

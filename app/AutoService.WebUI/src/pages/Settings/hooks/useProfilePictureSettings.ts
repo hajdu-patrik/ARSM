@@ -34,6 +34,7 @@ export function useProfilePictureSettings({
   const { storePictureState, invalidateRoster } = useProfileCache();
   const [pictureKey, setPictureKey] = useState(0);
   const [pictureVersion, setPictureVersion] = useState(() => Date.now());
+  const [pictureCropKey, setPictureCropKey] = useState(0);
   const [pictureSource, setPictureSource] = useState<string | null>(null);
   const [pendingPictureFileName, setPendingPictureFileName] = useState<string | null>(null);
   const [isPictureRemoveConfirmOpen, setIsPictureRemoveConfirmOpen] = useState(false);
@@ -81,6 +82,7 @@ export function useProfilePictureSettings({
 
   const isUploadingPicture = isUploadingFile || isRemovingPicture;
 
+  /** Validates the picked file (type, size, head) and opens the crop step with it, else toasts the refusal. */
   const handleSelectPicture = useCallback(async (file: File) => {
     if (!hasAllowedPictureType(file)) {
       showErrorToast('toast.pictureInvalidType');
@@ -111,6 +113,7 @@ export function useProfilePictureSettings({
       const imageSource = await fileToImageSource(file);
       setPendingPictureFileName(file.name);
       setPictureSource(imageSource);
+      setPictureCropKey((previousKey) => previousKey + 1);
     } catch {
       showErrorToast('toast.pictureCropFailed');
     }
@@ -152,6 +155,7 @@ export function useProfilePictureSettings({
     pictureKey,
     pictureVersion,
     pictureSource,
+    pictureCropKey,
     isPictureRemoveConfirmOpen,
     setIsPictureRemoveConfirmOpen,
     handleSelectPicture,

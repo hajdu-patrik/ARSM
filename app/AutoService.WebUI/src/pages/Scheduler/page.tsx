@@ -17,6 +17,7 @@ import { useSchedulerSummary } from './hooks/useSchedulerSummary';
 import { useSchedulerDataSync } from './hooks/useSchedulerDataSync';
 import { useSchedulerActions } from './hooks/useSchedulerActions';
 import { useSchedulerRouteFocus } from './hooks/useSchedulerRouteFocus';
+import { useSchedulerNow } from './hooks/useSchedulerNow';
 import { pageShellClass } from '../../utils/formStyles';
 
 /** Finds an appointment by id in the first list that holds it; the selected one is read from the live lists. */
@@ -38,6 +39,7 @@ function findAppointmentById(
   return null;
 }
 
+/** Page body: wires the scheduler hooks to the summary, calendar, month list and the two modals. */
 const SchedulerPageComponent = memo(function SchedulerPage() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((state) => state.user);
@@ -50,6 +52,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   const focusedAppointmentId = useSchedulerRouteFocus();
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(focusedAppointmentId);
   const [isIntakeOpen, setIsIntakeOpen] = useState(false);
+  const now = useSchedulerNow();
   const {
     todayAppointments,
     monthAppointments,
@@ -58,6 +61,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
   } = useSchedulerDataSync({
     calendarYear,
     calendarMonth,
+    now,
     showErrorToast,
   });
   const {
@@ -72,6 +76,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
     monthAppointments,
     todayAppointmentsCount: todayAppointments.length,
     locale: i18n.language,
+    now,
     t,
   });
 
@@ -147,6 +152,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
           onMonthChange={setCalendarMonth}
           onDayClick={handleDayClick}
           selectedDay={selectedDay}
+          now={now}
         />
       </section>
 
@@ -168,6 +174,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
           currentMechanicId={user?.personId}
           isAdmin={user?.isAdmin ?? false}
           selectedDay={selectedDay}
+          now={now}
           onClaim={handleClaim}
           onUnclaim={handleUnclaim}
           onCardClick={handleCardClick}
@@ -181,6 +188,7 @@ const SchedulerPageComponent = memo(function SchedulerPage() {
         onClose={handleCloseModal}
         currentMechanicId={user?.personId}
         isAdmin={user?.isAdmin ?? false}
+        now={now}
         onClaim={handleClaim}
         onStatusChange={handleStatusChange}
         onUnclaim={handleUnclaim}

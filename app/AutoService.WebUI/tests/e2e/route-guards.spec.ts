@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
 
@@ -16,7 +17,7 @@ test.describe('Auth and role route guards', () => {
     await page.goto('/customers');
 
     await expect(page).toHaveURL(/\/login$/);
-    const sessionHint = await page.evaluate(() => localStorage.getItem('arsm.auth.sessionHint'));
+    const sessionHint = await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY);
     expect(sessionHint).toBeNull();
   });
 

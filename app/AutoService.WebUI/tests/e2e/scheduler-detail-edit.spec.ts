@@ -132,6 +132,27 @@ test.describe('Scheduler detail edit', () => {
     expect(state.appointments[0]?.taskDescription).toBe('Detail task');
   });
 
+  test('closing the save confirmation with Cancel or Escape keeps the edit mode and the typed values', async ({ page }) => {
+    const { dialog } = await openDetail(page);
+    const task = dialog.locator('textarea');
+    const confirm = page.getByRole('dialog', { name: 'Confirm save' });
+    await dialog.getByTestId('appointment-detail-edit').click();
+    await task.fill('Typed and kept');
+
+    await dialog.getByTestId('appointment-detail-save').click();
+    await confirm.getByRole('button', { name: 'Cancel' }).click();
+    await expect(confirm).toHaveCount(0);
+    await expect(task).toHaveValue('Typed and kept');
+    await expect(dialog.getByTestId('appointment-detail-save')).toBeEnabled();
+
+    await dialog.getByTestId('appointment-detail-save').click();
+    await expect(confirm).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(confirm).toHaveCount(0);
+    await expect(task).toHaveValue('Typed and kept');
+    await expect(dialog.getByTestId('appointment-detail-save')).toBeEnabled();
+  });
+
   test('takes at most 200 characters of the task, as the API does', async ({ page }) => {
     const { dialog } = await openDetail(page);
     const task = dialog.locator('textarea');

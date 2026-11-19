@@ -27,7 +27,8 @@ FROM (
         ('20261018183502_AddCompanyProfile'),
         ('20261022072956_AddPhoneIndexPasswordResetAndRowVersions'),
         ('20261023143721_QuoteAppointmentCascade'),
-        ('20261029094053_AddPeopleTokensValidAfter')
+        ('20261029094053_AddPeopleTokensValidAfter'),
+        ('20261104231641_AddReversedNameTrigramIndexes')
     ) AS e (migration_id)
     LEFT JOIN "__EFMigrationsHistory" h ON h."MigrationId" = e.migration_id
     WHERE h."MigrationId" IS NULL

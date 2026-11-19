@@ -37,39 +37,50 @@ export const ProfilePictureCropModal = memo(function ProfilePictureCropModal({
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   const handleCropComplete = useCallback((_area: Area, areaPixels: Area) => {
     setCroppedAreaPixels(areaPixels);
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!imageSrc || !croppedAreaPixels) {
+    if (!imageSrc || !croppedAreaPixels || isCropping) {
       return;
     }
 
     let croppedBlob: Blob;
+    setIsCropping(true);
     try {
       croppedBlob = await cropImageToBlob(imageSrc, croppedAreaPixels, 'image/webp');
     } catch {
       showErrorToast('toast.pictureCropFailed');
       return;
+    } finally {
+      setIsCropping(false);
     }
 
     onConfirm(croppedBlob);
-  }, [croppedAreaPixels, imageSrc, onConfirm, showErrorToast]);
+  }, [croppedAreaPixels, imageSrc, isCropping, onConfirm, showErrorToast]);
+
+  // A close while the crop runs would still end in an upload, so every close path waits for it.
+  const handleCancel = useCallback(() => {
+    if (!isCropping) {
+      onCancel();
+    }
+  }, [isCropping, onCancel]);
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onCancel}
+      onClose={handleCancel}
       title={t('settings.cropModalTitle')}
       widthClassName="max-w-2xl"
       footer={(
         <>
           <button
             type="button"
-            onClick={onCancel}
-            disabled={isSubmitting}
+            onClick={handleCancel}
+            disabled={isSubmitting || isCropping}
             className={secondaryButtonClass}
           >
             {t('common.actions.cancel')}
@@ -79,8 +90,8 @@ export const ProfilePictureCropModal = memo(function ProfilePictureCropModal({
             onClick={() => {
               void handleConfirm();
             }}
-            disabled={isSubmitting || !croppedAreaPixels}
-            aria-busy={isSubmitting}
+            disabled={isSubmitting || isCropping || !croppedAreaPixels}
+            aria-busy={isSubmitting || isCropping}
             className={buttonClass}
           >
             {isSubmitting ? t('settings.uploading') : t('settings.cropAndUpload')}

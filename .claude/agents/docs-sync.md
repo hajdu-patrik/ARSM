@@ -34,6 +34,8 @@ Keep documentation concise, correct, and aligned with the code.
 - `tests/CLAUDE.md`
 - `scripts/CLAUDE.md`
 - `deploy/CLAUDE.md`
+- `README.md` and `README(HU).md`
+- `deploy/docs/`
 
 ## Validation
 

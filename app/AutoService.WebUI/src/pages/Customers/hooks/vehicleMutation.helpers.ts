@@ -6,7 +6,7 @@ import {
 import type { CreateVehicleRequest, VehicleDetailDto } from '../../../types/customers/customers.types';
 
 /** Outcome of building a vehicle payload: the payload, or the i18n key of the first invalid field. */
-export type VehiclePayloadResult =
+type VehiclePayloadResult =
   | { readonly payload: CreateVehicleRequest; readonly fieldError: null }
   | { readonly payload: null; readonly fieldError: string };
 
@@ -18,11 +18,7 @@ export function buildVehiclePayload(form: VehicleFormState): VehiclePayloadResul
     return { payload: null, fieldError: 'common.validation.vehicleYearInvalid' };
   }
 
-  if (Number.isNaN(numericValues.mileageKm)) {
-    return { payload: null, fieldError: 'customers.errors.vehicleNumberInvalid' };
-  }
-
-  if (Number.isNaN(numericValues.enginePowerKw)) {
+  if (Number.isNaN(numericValues.mileageKm) || Number.isNaN(numericValues.enginePowerKw)) {
     return { payload: null, fieldError: 'customers.errors.vehicleNumberInvalid' };
   }
 
@@ -45,6 +41,7 @@ export function buildVehiclePayload(form: VehicleFormState): VehiclePayloadResul
   };
 }
 
+/** True when every vehicle form field holds a non-blank value. */
 export function hasRequiredVehicleFields(form: VehicleFormState): boolean {
   return form.licensePlate.trim().length > 0
     && form.vin.trim().length > 0
@@ -56,6 +53,7 @@ export function hasRequiredVehicleFields(form: VehicleFormState): boolean {
     && form.drivetrainType.trim().length > 0;
 }
 
+/** True when at least one vehicle form field holds a non-blank value. */
 export function hasAnyVehicleFieldValue(form: VehicleFormState): boolean {
   return form.licensePlate.trim().length > 0
     || form.vin.trim().length > 0

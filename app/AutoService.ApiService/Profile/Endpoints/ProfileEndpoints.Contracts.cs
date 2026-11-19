@@ -2,6 +2,7 @@ namespace AutoService.ApiService.Profile.Endpoints;
 
 public static partial class ProfileEndpoints
 {
+    /** GET /api/profile response body. */
     internal sealed record ProfileResponse(
         int PersonId,
         string PersonType,
@@ -21,13 +22,14 @@ public static partial class ProfileEndpoints
         string? FirstName,
         string? LastName);
 
-    /** POST /api/profile/change-password request body. All three password fields are capped at 128 chars by product decision, not a DB column limit. Enforced by FieldLengthValidator in ChangePasswordAsync before any password-hashing work runs. */
+    /** POST /api/profile/change-password request body; the password fields are capped at 128 chars
+        by product decision (FieldLengthValidator), not by a DB column. */
     internal sealed record ChangePasswordRequest(
         string CurrentPassword,
         string NewPassword,
         string ConfirmNewPassword);
 
-    /** POST /api/profile/delete request body; requires the current password to confirm deletion. */
+    /** DELETE /api/profile request body; requires the current password to confirm deletion. */
     internal sealed record DeleteProfileRequest(
         string CurrentPassword);
 }

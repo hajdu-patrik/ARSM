@@ -1,6 +1,7 @@
 /** A 429 lockout_active answer to the password change and the profile deletion: both toast the wait in whole
  * minutes (EN and HU) from the shared lockout text, mark no field and keep the typed passwords and the session. */
 import { expect, test } from '@playwright/test';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { openSettings } from './pages/settings.page';
 import type { TestLanguage } from './support/browser-state';
 import { errorToastMessage, toastMessage } from './support/toast';
@@ -9,7 +10,6 @@ const CHANGE_PASSWORD = 'POST /api/profile/change-password';
 const DELETE_PROFILE = 'DELETE /api/profile';
 const CURRENT = 'CurrentPass1!';
 const NEXT = 'NewPassWord1!';
-const HINT_KEY = 'arsm.auth.sessionHint';
 
 const LOCKOUT_TEXT: Record<TestLanguage, { wait: string; noWait: string }> = {
   en: { wait: 'Too many attempts. Try again in 14 minutes.', noWait: 'Too many attempts. Please try again later.' },
@@ -66,7 +66,7 @@ test.describe('Profile deletion lockout', () => {
       await expect(dialog).toBeVisible();
       await expect(page.locator('#delete-profile-password')).not.toHaveAttribute('aria-invalid', 'true');
       await expect(page).toHaveURL(/\/settings$/);
-      expect(await page.evaluate((key) => localStorage.getItem(key), HINT_KEY)).toBe('1');
+      expect(await page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY)).toBe('1');
     });
   }
 

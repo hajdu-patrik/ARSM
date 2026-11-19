@@ -1,8 +1,9 @@
 /** Catalog list-state hooks: one server-paged, server-searched read per tab, sized to the rows that fit. */
-import { useEffect, useRef, type RefObject } from 'react';
+import { useRef, type RefObject } from 'react';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { DEFAULT_MIN_PAGE_SIZE, useFittingPageSize } from '../../../hooks/useFittingPageSize';
 import { useListPaging } from '../../../hooks/useListPaging';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { catalogQueries } from '../../../services/queries/catalog.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
 import type { LaborTypeDto, PartDto } from '../../../types/catalog/catalog.types';
@@ -11,7 +12,7 @@ import type { PagedQuery, PagedResult } from '../../../types/common/pagination.t
 /** Measured pitch (row plus divider) of one table-layout row; used until a rendered row can be measured. */
 const FALLBACK_ROW_HEIGHT_PX = 69;
 
-/** Tile-layout pitches: tiles show below 48rem, the text wraps one px less below ~357px, and a 350px viewport drops the 44px actions onto their own row (+28 px with a one-line title). */
+/** Tile-layout pitches: tiles below 48rem, text wraps below ~357px, actions on their own row at 350px. */
 const TILE_ROW_HEIGHT_PX = 193;
 const NARROW_TILE_ROW_HEIGHT_PX = 192;
 const ACTIONS_ROW_TILE_HEIGHT_PX = 220;
@@ -54,7 +55,7 @@ export interface CatalogEntityListState<TDto> {
 }
 
 /** A tab's list state plus the ref of the element whose height sizes the page; kept apart so the state holds no ref. */
-export interface CatalogEntityList<TDto> {
+interface CatalogEntityList<TDto> {
   readonly list: CatalogEntityListState<TDto>;
   readonly listRef: RefObject<HTMLDivElement | null>;
 }
@@ -82,7 +83,7 @@ function useCatalogEntityList<TDto>({
     reservedBottomPx: RESERVED_BOTTOM_PX,
   });
   const { searchTerm, setSearchTerm, debouncedSearch, page, setPage } = useListPaging();
-  const query = usePageQuery({ page, pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE, search: debouncedSearch }, pageSize !== null);
+  const query = usePageQuery({ page, pageSize: pageSize ?? DEFAULT_MIN_PAGE_SIZE, search: debouncedSearch.trim() }, pageSize !== null);
   const totalCount = query.data?.totalCount ?? 0;
   const lastPage = Math.max(1, Math.ceil(totalCount / (pageSize ?? DEFAULT_MIN_PAGE_SIZE)));
 
@@ -91,13 +92,7 @@ function useCatalogEntityList<TDto>({
     setPage(lastPage);
   }
 
-  const hasLoadFailed = query.isLoadingError && !query.isFetching;
-
-  useEffect(() => {
-    if (hasLoadFailed) {
-      showErrorToast(loadErrorToastKey);
-    }
-  }, [hasLoadFailed, loadErrorToastKey, showErrorToast]);
+  useQueryReadFailureToast(query, loadErrorToastKey, showErrorToast);
 
   const list: CatalogEntityListState<TDto> = {
     items: query.data?.items ?? NO_ITEMS,
@@ -130,6 +125,7 @@ function useLaborTypesPageQuery(query: PagedQuery, isEnabled: boolean) {
   return useQuery({ ...catalogQueries.laborTypesPage(useAuthQueryScope(), query), enabled: isEnabled });
 }
 
+/** List state of the Parts tab. */
 export function usePartsList({ showErrorToast }: UseCatalogListParams): CatalogEntityList<PartDto> {
   return useCatalogEntityList<PartDto>({
     usePageQuery: usePartsPageQuery,
@@ -138,6 +134,7 @@ export function usePartsList({ showErrorToast }: UseCatalogListParams): CatalogE
   });
 }
 
+/** List state of the Labor types tab. */
 export function useLaborTypesList({ showErrorToast }: UseCatalogListParams): CatalogEntityList<LaborTypeDto> {
   return useCatalogEntityList<LaborTypeDto>({
     usePageQuery: useLaborTypesPageQuery,

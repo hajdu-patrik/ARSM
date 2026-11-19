@@ -43,6 +43,7 @@ test.describe('Scheduler admin assignment', () => {
 
     const removeButtons = dialog.getByRole('button', { name: 'Unassign mechanic' });
     await expect(removeButtons).toHaveCount(2);
+    await expect(dialog.getByRole('button', { name: 'Unassign mechanic: Peter Nagy', exact: true })).toBeVisible();
     await removeButtons.first().click();
     await expect(toastMessage(page, 'Mechanic removed successfully.')).toBeVisible();
     await expect(dialog.getByText('Peter Nagy', { exact: true })).toHaveCount(0);

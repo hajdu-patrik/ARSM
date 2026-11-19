@@ -112,7 +112,7 @@ Content-Type: application/json
 ?? status == 422
 ?? js response.parsedBody.detail includes Quantity must be
 
-### [Negative][LineRules] A quantity that rounds to 0.00 in the 2-decimal column must be refused (4xx expected, never a 500)
+### [Negative][LineRules] A quantity that rounds to 0.00 in the 2-decimal column must be refused (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -120,7 +120,8 @@ Content-Type: application/json
 
 { "lineKind": "Part", "quantity": 0.004, "description": "Rounds to zero", "netUnitPrice": 100, "vatRatePercent": 27, "version": {{seed.version}} }
 
-?? js (response.statusCode >= 400 && response.statusCode < 500) == true
+?? status == 422
+?? js response.parsedBody.detail includes Quantity must be
 
 ### [Negative][LineRules] A negative price is refused (422 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/quotes/{{quote.id}}/lines

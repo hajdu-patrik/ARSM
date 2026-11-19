@@ -116,7 +116,7 @@ export interface SaveErrorRules<TField extends string> {
 }
 
 /** A rejected save: the key to toast, the errors to pin (null keeps the current ones) and the server field errors. */
-export interface RejectedSave<TField extends string> {
+interface RejectedSave<TField extends string> {
   readonly messageKey: string;
   readonly pinned: PinnedFieldErrors<TField> | null;
   readonly fieldErrors: ServerFieldErrors | null;

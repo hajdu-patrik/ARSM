@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { currentDayTestId, SchedulerPage } from './pages/scheduler.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
 import { seedAppointment, todayAt } from './support/appointment-fixtures';
+import { signInWithMocks } from './support/sign-in';
 import { MOCK_MECHANIC_IDS } from './support/test-data';
 
 /** Status dot colors the calendar grid paints per appointment status. */
@@ -12,16 +10,15 @@ const CANCELLED_DOT = 'bg-arsm-error-accent';
 
 test.describe('Scheduler live status propagation', () => {
   test.beforeEach(async ({ page }) => {
-    const env = getAppointmentFlowEnv();
     // Status changes need an assigned mechanic, so the seeded appointment is assigned to the admin.
-    const state = await installApiMocks(page, { profileEmail: env.mechanicEmail, isAdmin: true });
-    seedAppointment(state, {
-      id: 6361,
-      task: 'Live status propagation check',
-      scheduledAt: todayAt(9),
-      mechanicIds: [MOCK_MECHANIC_IDS.admin],
+    await signInWithMocks(page, { isAdmin: true }, 'en', (state) => {
+      seedAppointment(state, {
+        id: 6361,
+        task: 'Live status propagation check',
+        scheduledAt: todayAt(9),
+        mechanicIds: [MOCK_MECHANIC_IDS.admin],
+      });
     });
-    await new AuthPage(page).loginAsMechanic(env);
   });
 
   test('recolors the calendar day dot on status change without a page reload', async ({ page }) => {

@@ -36,7 +36,7 @@ export function ToolbarSearchField({ testIdPrefix, value, placeholder, ariaLabel
           onChange(event.target.value);
         }}
         placeholder={placeholder}
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ?? placeholder}
         className={searchInputClass}
       />
       {value.length > 0 && (

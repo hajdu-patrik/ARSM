@@ -14,7 +14,7 @@ import {
   intakeInputClass,
   uppercaseMetaLabelTextClass,
 } from '../../../../utils/formStyles';
-import type { VehicleFormState, VehicleMode } from './SchedulerIntakeModal.types';
+import { VEHICLE_NUMERIC_LIMITS, type VehicleFormState, type VehicleMode } from './SchedulerIntakeModal.types';
 
 interface SchedulerIntakeVehicleModeProps {
   readonly customerLookup: SchedulerCustomerLookupDto | null;
@@ -26,6 +26,7 @@ interface SchedulerIntakeVehicleModeProps {
   readonly onExistingVehicleIdChange: (value: string) => void;
 }
 
+/** Intake section that toggles between an existing vehicle of the customer and a new one. */
 export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVehicleModeSection({
   customerLookup,
   customerHasVehicles,
@@ -71,7 +72,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
       {vehicleMode === 'existing' && (
         <label className={intakeFieldWrapperClass}>
           <span className={intakeFieldLabelClass}>{translate('scheduler.intake.selectVehicle')}</span>
-          <div className={formFieldGroupClass}>
+          <span className={`block ${formFieldGroupClass}`}>
             <Dropdown
               size="intake"
               data-testid="scheduler-intake-existing-vehicle"
@@ -80,7 +81,7 @@ export const SchedulerIntakeVehicleModeSection = memo(function SchedulerIntakeVe
               onChange={onExistingVehicleIdChange}
               placeholder={translate('scheduler.intake.selectVehiclePlaceholder')}
             />
-          </div>
+          </span>
         </label>
       )}
     </div>
@@ -93,6 +94,7 @@ interface SchedulerIntakeVehicleFormProps {
   readonly onVehicleFieldChange: (field: keyof VehicleFormState, value: string) => void;
 }
 
+/** Intake form fields of a new vehicle: plate, VIN, brand, model, year, mileage, power and drivetrain. */
 export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleForm({
   vehicle,
   translate,
@@ -142,17 +144,17 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.mileageKm')}</span>
-        <input type="number" min={0} max={5000000} value={vehicle.mileageKm} onChange={changeField('mileageKm')} placeholder={translate('scheduler.intake.vehicleMileageKmPlaceholder')} className={intakeInputClass} />
+        <input type="number" min={VEHICLE_NUMERIC_LIMITS.mileageKm.min} max={VEHICLE_NUMERIC_LIMITS.mileageKm.max} value={vehicle.mileageKm} onChange={changeField('mileageKm')} placeholder={translate('scheduler.intake.vehicleMileageKmPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.enginePowerKw')}</span>
-        <input type="number" min={0} max={50000} value={vehicle.enginePowerKw} onChange={changeField('enginePowerKw')} placeholder={translate('scheduler.intake.vehicleEnginePowerKwPlaceholder')} className={intakeInputClass} />
+        <input type="number" min={VEHICLE_NUMERIC_LIMITS.enginePowerKw.min} max={VEHICLE_NUMERIC_LIMITS.enginePowerKw.max} value={vehicle.enginePowerKw} onChange={changeField('enginePowerKw')} placeholder={translate('scheduler.intake.vehicleEnginePowerKwPlaceholder')} className={intakeInputClass} />
       </label>
 
       <label className={intakeFieldWrapperClass}>
         <span className={intakeFieldLabelClass}>{translate('common.fields.drivetrain')}</span>
-        <div className={formFieldGroupClass}>
+        <span className={`block ${formFieldGroupClass}`}>
           <Dropdown
             size="intake"
             value={vehicle.drivetrainType}
@@ -162,7 +164,7 @@ export const SchedulerIntakeVehicleForm = memo(function SchedulerIntakeVehicleFo
             }}
             placeholder={translate('common.placeholders.drivetrain')}
           />
-        </div>
+        </span>
       </label>
     </div>
   );

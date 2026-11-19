@@ -2,7 +2,7 @@ using AutoService.ApiService.Domain.UniqueTypes;
 
 namespace AutoService.ApiService.Data;
 
-/** Formatting helpers the server-side DTO projections call; EF Core evaluates them client-side, so the output matches the entity formatting exactly. */
+/** Formatting helpers for server-side DTO projections; EF Core evaluates them client-side. */
 internal static class ProjectionFormat
 {
     /** Formats owned name parts exactly like FullName.ToString(). */
@@ -13,4 +13,8 @@ internal static class ProjectionFormat
     internal static string EnumName<TEnum>(TEnum value)
         where TEnum : struct, Enum
         => value.ToString();
+
+    /** True when a profile picture object is stored for the person. */
+    internal static bool HasProfilePicture(string? profilePictureObjectKey)
+        => profilePictureObjectKey != null;
 }

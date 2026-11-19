@@ -35,6 +35,7 @@ public static partial class AppointmentEndpoints
         }
     }
 
+    /** One delete attempt: 404 when missing, 409 when completed, else removes the row and publishes the change. */
     private static async Task<IResult> TryDeleteAppointmentAsync(
         int id,
         AutoServiceDbContext db,
@@ -62,7 +63,7 @@ public static partial class AppointmentEndpoints
 
         logger.LogInformation("Appointment {AppointmentId} deleted.", id);
 
-        PublishAppointmentChanged(broadcaster, id);
+        broadcaster.PublishAppointmentChanged(id);
 
         return Results.NoContent();
     }

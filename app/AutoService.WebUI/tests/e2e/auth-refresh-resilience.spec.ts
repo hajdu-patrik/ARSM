@@ -1,11 +1,11 @@
 /** A write refused with 401 refreshes the session and is retried once: only a refresh answered 401 or 403 ends the
  * session, and a request that stays refused is not retried again. */
 import { expect, test, type Page } from '@playwright/test';
+import { AUTH_SESSION_HINT_KEY } from '../../src/utils/browserStorageKeys';
 import { openSettings, type SettingsPage } from './pages/settings.page';
 import type { MockFailure } from './support/api-mock-response';
 import { errorToastMessage, toastMessage } from './support/toast';
 
-const HINT_KEY = 'arsm.auth.sessionHint';
 const PROFILE_PUT = 'PUT /api/profile';
 const REFRESH = 'POST /api/auth/refresh';
 
@@ -16,10 +16,12 @@ async function saveProfile(settings: SettingsPage): Promise<void> {
   await settings.confirmDialog('Confirm changes').getByRole('button', { name: 'Save', exact: true }).click();
 }
 
+/** The stored session hint of the page, or null once it was cleared. */
 function sessionHint(page: Page): Promise<string | null> {
-  return page.evaluate((key) => localStorage.getItem(key), HINT_KEY);
+  return page.evaluate((key) => localStorage.getItem(key), AUTH_SESSION_HINT_KEY);
 }
 
+/** How many times the route call log recorded the given route key. */
 function countOf(routeCallLog: readonly string[], routeKey: string): number {
   return routeCallLog.filter((entry) => entry === routeKey).length;
 }

@@ -1,15 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { SchedulerPage } from './pages/scheduler.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
+import { signInWithMocks } from './support/sign-in';
 import { toastMessage } from './support/toast';
 
 test.describe('Scheduler appointment delete (admin)', () => {
   test.beforeEach(async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail, isAdmin: true });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page, { isAdmin: true });
   });
 
   test('cancel keeps the appointment, confirm deletes it and shows a toast', async ({ page }) => {
@@ -48,9 +44,7 @@ test.describe('Scheduler appointment delete (admin)', () => {
 
 test.describe('Scheduler appointment delete (non-admin)', () => {
   test('a mechanic without admin rights sees no delete action', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
 
     const schedulerPage = new SchedulerPage(page);
     const taskDescription = 'Delete visibility check';

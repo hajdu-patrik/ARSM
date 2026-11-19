@@ -2,11 +2,7 @@
 import { useCallback, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useToastStore } from '../../../../store/toast.store';
-import type {
-  AppointmentDto,
-  UpdateAppointmentRequest,
-  UpdateAppointmentVehicleRequest,
-} from '../../../../types/scheduler/scheduler.types';
+import type { AppointmentDto, UpdateAppointmentRequest } from '../../../../types/scheduler/scheduler.types';
 import {
   type EditFormState,
   buildEditForm,
@@ -20,11 +16,7 @@ import {
 
 interface UseAppointmentEditingArgs {
   readonly appointment: AppointmentDto;
-  readonly onUpdate: (
-    id: number,
-    request: UpdateAppointmentRequest,
-    vehicleRequest?: UpdateAppointmentVehicleRequest,
-  ) => Promise<void>;
+  readonly onUpdate: (id: number, request: UpdateAppointmentRequest) => Promise<void>;
 }
 
 /** State and handlers of the edit mode; the save is a mutation, so its pending flag is derived. */
@@ -90,10 +82,7 @@ export function useAppointmentEditing({ appointment, onUpdate }: UseAppointmentE
     }
 
     setIsSaveConfirmOpen(false);
-    if (isEditing) {
-      exitEditing();
-    }
-  }, [exitEditing, isEditing, isSaving]);
+  }, [isSaving]);
 
   const confirmSave = useCallback(() => {
     const validation = buildUpdateRequestFromEditForm(appointment, editForm, baseVersion);

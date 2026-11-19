@@ -38,8 +38,12 @@ test.describe('Scheduler calendar - day selection', () => {
     await expect(page.getByText('2 scheduled repair tasks', { exact: true })).toBeVisible();
     await expect(scheduler.monthList().getByText('2 appointments', { exact: true })).toBeVisible();
     await expect(scheduler.appointmentCards()).toHaveCount(2);
+    await expect(page.getByTestId(currentDayTestId())).toHaveAttribute('aria-current', 'date');
+    await expect(page.getByTestId(currentDayTestId())).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByTestId(calendarDayTestId(otherDate)).click();
+    await expect(page.getByTestId(calendarDayTestId(otherDate))).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId(currentDayTestId())).toHaveAttribute('aria-pressed', 'false');
     await expect(page.getByText(`Selected day, ${await scheduler.longDate(otherDate)}`, { exact: true })).toBeVisible();
     await expect(page.getByText('1 scheduled repair task', { exact: true })).toBeVisible();
     await expect(scheduler.appointmentCards()).toHaveCount(1);

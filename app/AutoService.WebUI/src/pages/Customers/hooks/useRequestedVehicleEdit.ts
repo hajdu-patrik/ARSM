@@ -1,9 +1,10 @@
-/** Opens the vehicle editor for `?vehicleId=<id>` once, then clears the parameter; an unknown id is ignored silently. */
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
+import { useQueryReadFailureToast } from '../../../hooks/useReadFailureToast';
 import { customersQueries } from '../../../services/queries/customers.queries';
 import { useAuthQueryScope } from '../../../services/queries/useAuthQueryScope';
+import { useToastStore } from '../../../store/toast.store';
 import type { VehicleDetailDto } from '../../../types/customers/customers.types';
 
 const IDLE_VEHICLE_ID = 0;
@@ -14,6 +15,7 @@ function parseVehicleId(raw: string | null): number | null {
   return raw !== null && Number.isInteger(vehicleId) && vehicleId > 0 ? vehicleId : null;
 }
 
+/** Opens the vehicle editor for `?vehicleId=<id>` once, then clears the parameter; an invalid id is ignored, a failed read toasts. */
 export function useRequestedVehicleEdit(
   openEditVehicleModal: (customerId: number, vehicle: VehicleDetailDto) => void,
 ): void {
@@ -26,15 +28,19 @@ export function useRequestedVehicleEdit(
     ...customersQueries.vehicle(scope, vehicleId ?? IDLE_VEHICLE_ID),
     enabled: vehicleId !== null,
   });
+  const showErrorToast = useToastStore((state) => state.showError);
+  useQueryReadFailureToast(query, 'customers.errors.vehiclesLoadFailed', showErrorToast, String(vehicleId));
   const vehicle = query.data;
   const hasFailed = query.isError;
+  const isFetching = query.isFetching;
 
   useEffect(() => {
     if (requested === null) {
       return;
     }
 
-    if (vehicleId !== null && vehicle === undefined && !hasFailed) {
+    // Wait for the fresh read, so a stale cached vehicle never seeds the editor.
+    if (vehicleId !== null && (vehicle === undefined || isFetching) && !hasFailed) {
       return;
     }
 
@@ -44,5 +50,5 @@ export function useRequestedVehicleEdit(
     if (vehicle !== undefined) {
       openEditVehicleModal(vehicle.customer.id, vehicle);
     }
-  }, [hasFailed, openEditVehicleModal, requested, setSearchParams, vehicle, vehicleId]);
+  }, [hasFailed, isFetching, openEditVehicleModal, requested, setSearchParams, vehicle, vehicleId]);
 }

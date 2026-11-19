@@ -1,4 +1,4 @@
-/** Quote editor header: metadata, title/notes, validity (own save action), and appointment link; fields disable rather than hide past Draft, except validity, which extends via its own endpoint (D23, see CLAUDE.md). */
+/** Quote editor header: metadata, title, notes, validity (own save action) and appointment link. */
 import { memo, useId, type Dispatch, type SetStateAction } from 'react';
 import type { TFunction } from 'i18next';
 import { CalendarClock } from 'lucide-react';
@@ -29,7 +29,7 @@ import {
 } from '../../../utils/formStyles';
 import { fieldErrorA11yProps } from '../../../utils/fieldA11y';
 import { formatShortDate } from '../../../utils/intlFormat';
-import { resolveQuoteDisplayStatus, type QuoteHeaderFieldErrors, type QuoteHeaderFormState } from '../helpers';
+import { buildQuoteHeaderForm, resolveQuoteDisplayStatus, type QuoteHeaderFieldErrors, type QuoteHeaderFormState } from '../helpers';
 import { QuoteStatusBadge } from './QuoteStatusBadge';
 
 interface QuoteEditorHeaderSectionProps {
@@ -42,6 +42,7 @@ interface QuoteEditorHeaderSectionProps {
   readonly errors: QuoteHeaderFieldErrors;
   readonly appointments: AppointmentDto[];
   readonly isSaving: boolean;
+  readonly isExtendingValidity: boolean;
   readonly canEditHeader: boolean;
   readonly canChangeValidity: boolean;
   readonly onSaveValidity: () => void;
@@ -52,7 +53,7 @@ function buildAppointmentOptionLabel(appointment: AppointmentDto, locale: string
   return `${formatShortDate(appointment.scheduledDate, locale)} - ${appointment.taskDescription}`;
 }
 
-/** Picks the locked-header notice key: the server lock reason first, else the status (Accepted and Rejected read as closed, Sent keeps the original text). */
+/** Picks the locked-header notice key: the server lock reason first, else the status. */
 function resolveLockedNoticeKey(quote: QuoteDetailDto): string {
   switch (quote.lockReason) {
     case 'appointment_completed':
@@ -89,12 +90,21 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
   errors,
   appointments,
   isSaving,
+  isExtendingValidity,
   canEditHeader,
   canChangeValidity,
   onSaveValidity,
 }: QuoteEditorHeaderSectionProps) {
   const titleErrorId = useId();
+  const validityUnsavedHintId = useId();
+  const validityExtendHintId = useId();
+  const appointmentHintId = useId();
   const isExistingQuote = quote !== null;
+  // The footer Save changes ignores the validity, so an edited date needs its own cue.
+  const hasUnsavedValidity = quote !== null
+    && canChangeValidity
+    && form.validUntil.length > 0
+    && form.validUntil !== buildQuoteHeaderForm(quote).validUntil;
   // A linked appointment that the vehicle history no longer returns would
   // otherwise leave the disabled dropdown blank, hiding an existing link.
   const hasUnlistedAppointmentLink = form.appointmentId.length > 0
@@ -103,6 +113,11 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
   const linkableAppointments = isExistingQuote
     ? appointments
     : appointments.filter((appointment) => appointment.canLinkQuote);
+  const showsExtendHint = quote?.status === 'Sent';
+  const validityDescribedBy = [
+    hasUnsavedValidity ? validityUnsavedHintId : null,
+    showsExtendHint ? validityExtendHintId : null,
+  ].filter((id) => id !== null).join(' ');
   const appointmentOptions = [
     { value: '', label: t('quotes.appointmentNone') },
     ...linkableAppointments.map((appointment) => ({
@@ -184,8 +199,9 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
               onChange={(event) => {
                 setForm((previous) => ({ ...previous, validUntil: event.target.value }));
               }}
-              className={`${inputClass} flex-1`}
+              className={`${inputClass} grow basis-40`}
               disabled={isSaving || !canChangeValidity}
+              aria-describedby={validityDescribedBy.length > 0 ? validityDescribedBy : undefined}
             />
             {isExistingQuote && (
               <button
@@ -193,15 +209,23 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
                 type="button"
                 onClick={onSaveValidity}
                 disabled={isSaving || !canChangeValidity || form.validUntil.length === 0}
+                aria-busy={isExtendingValidity}
                 className={referenceChipNeutralWrapButtonClass}
               >
                 <CalendarClock className={defaultIconClass} />
-                <span className="min-w-0 text-center">{t('quotes.saveValidUntil')}</span>
+                <span className="min-w-0 text-center">
+                  {isExtendingValidity ? t('common.actions.saving') : t('quotes.saveValidUntil')}
+                </span>
               </button>
             )}
           </div>
-          {quote?.status === 'Sent' && (
-            <p className={`mt-1.5 ${mutedMetaTextClass}`}>{t('quotes.validityExtendOnlyHint')}</p>
+          {hasUnsavedValidity && (
+            <p id={validityUnsavedHintId} data-testid="quote-validity-unsaved-hint" className={`mt-1.5 ${mutedMetaTextClass}`}>
+              {t('quotes.validityUnsavedHint')}
+            </p>
+          )}
+          {showsExtendHint && (
+            <p id={validityExtendHintId} className={`mt-1.5 ${mutedMetaTextClass}`}>{t('quotes.validityExtendOnlyHint')}</p>
           )}
         </div>
 
@@ -218,10 +242,11 @@ export const QuoteEditorHeaderSection = memo(function QuoteEditorHeaderSection({
                 setForm((previous) => ({ ...previous, appointmentId: value }));
               }}
               disabled={isSaving || isExistingQuote}
+              ariaDescribedBy={isExistingQuote ? appointmentHintId : undefined}
             />
           </div>
           {isExistingQuote && (
-            <p className={`mt-1.5 ${mutedMetaTextClass}`}>{t('quotes.appointmentFixedHint')}</p>
+            <p id={appointmentHintId} className={`mt-1.5 ${mutedMetaTextClass}`}>{t('quotes.appointmentFixedHint')}</p>
           )}
         </div>
       </div>

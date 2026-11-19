@@ -1,7 +1,7 @@
 /** Computes summary-strip data for the scheduler page header: selected date, label, and appointment count. */
 import { useMemo } from 'react';
 import type { TFunction } from 'i18next';
-import { formatLongDate, isPastCalendarDay, isScheduledOn } from '../utils/scheduler-datetime';
+import { formatLongDate, isScheduledOn } from '../utils/scheduler-datetime';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
 
 interface UseSchedulerSummaryArgs {
@@ -12,9 +12,12 @@ interface UseSchedulerSummaryArgs {
   /** Number of today's appointments, derived from the loaded month reads. */
   readonly todayAppointmentsCount: number;
   readonly locale: string;
+  /** The page clock (ms); a new value moves "today". */
+  readonly now: number;
   readonly t: TFunction;
 }
 
+/** Selected date, its label, the header date text and the appointment count for the summary strip. */
 export function useSchedulerSummary({
   selectedDay,
   calendarYear,
@@ -22,6 +25,7 @@ export function useSchedulerSummary({
   monthAppointments,
   todayAppointmentsCount,
   locale,
+  now,
   t,
 }: UseSchedulerSummaryArgs) {
   const selectedDate = useMemo(() => {
@@ -37,14 +41,6 @@ export function useSchedulerSummary({
     return new Date(calendarYear, calendarMonth - 1, selectedDay);
   }, [calendarMonth, calendarYear, selectedDay]);
 
-  const isSelectedDateInPast = useMemo(() => {
-    if (!selectedDate) {
-      return false;
-    }
-
-    return isPastCalendarDay(selectedDate);
-  }, [selectedDate]);
-
   const selectedDateLabel = useMemo(() => {
     if (!selectedDate) {
       return null;
@@ -54,8 +50,8 @@ export function useSchedulerSummary({
   }, [locale, selectedDate]);
 
   const todayFormatted = useMemo(() => {
-    return formatLongDate(new Date(), locale);
-  }, [locale]);
+    return formatLongDate(new Date(now), locale);
+  }, [locale, now]);
 
   const summaryDateText = useMemo(() => {
     if (selectedDateLabel) {
@@ -75,7 +71,6 @@ export function useSchedulerSummary({
 
   return {
     selectedDate,
-    isSelectedDateInPast,
     selectedDateLabel,
     summaryDateText,
     summaryCount,

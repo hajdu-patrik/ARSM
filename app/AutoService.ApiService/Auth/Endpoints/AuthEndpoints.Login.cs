@@ -11,11 +11,6 @@ namespace AutoService.ApiService.Auth.Endpoints;
 
 public static partial class AuthEndpoints
 {
-    // Fixed dummy hash gives the user-not-found path a verification cost comparable to
-    // found-but-wrong-password (CheckPasswordSignInAsync), so timing can't leak registration status.
-    private static readonly Lazy<string> DummyPasswordHash = new(() =>
-        new PasswordHasher<IdentityUser>().HashPassword(new IdentityUser(), "Dummy-Password-For-Timing-Parity-0000"));
-
     /** Password login: resolves the account, checks the password with lockout counting and issues the session cookies. */
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
@@ -47,7 +42,7 @@ public static partial class AuthEndpoints
         if (identityUser is null)
         {
             // Dummy verification to keep this path's cost comparable to CheckPasswordSignInAsync below.
-            _ = new PasswordHasher<IdentityUser>().VerifyHashedPassword(new IdentityUser(), DummyPasswordHash.Value, request.Password);
+            PasswordCheck.VerifyDummyPassword(request.Password);
 
             logger.LogInformation("Login failed: no identity user found for provided identifier. ClientIp: {ClientIp}.", clientIp);
             return InvalidCredentialsResult();
@@ -69,7 +64,7 @@ public static partial class AuthEndpoints
         {
             // Do not reveal that Identity user exists but domain record is missing.
             logger.LogWarning("Login failed: linked mechanic record missing for identity user {IdentityUserId}.", identityUser.Id);
-            return ApiProblem.Unauthorized("Invalid login credentials.");
+            return InvalidCredentialsResult();
         }
 
         var nowUtc = DateTime.UtcNow;

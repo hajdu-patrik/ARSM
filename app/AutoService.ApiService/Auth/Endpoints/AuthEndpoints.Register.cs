@@ -58,29 +58,31 @@ public static partial class AuthEndpoints
             return CreateRegistrationFailedResult();
         }
 
-        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        if (!string.IsNullOrWhiteSpace(phoneNumber) && await IsPhoneNumberInUseAsync(phoneNumber, userManager, db, cancellationToken))
         {
-            var phoneLookupCandidates = ContactNormalization.BuildPhoneLookupCandidates(phoneNumber);
-            var phoneNumberInUse = await userManager.Users
-                .AnyAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
-
-            if (!phoneNumberInUse)
-            {
-                phoneNumberInUse = await db.People
-                    .AsNoTracking()
-                    .AnyAsync(p => p.PhoneNumber != null && phoneLookupCandidates.Contains(p.PhoneNumber), cancellationToken);
-            }
-
-            if (phoneNumberInUse)
-            {
-                logger.LogInformation("Registration rejected: phone number already exists.");
-                return CreateRegistrationFailedResult();
-            }
+            logger.LogInformation("Registration rejected: phone number already exists.");
+            return CreateRegistrationFailedResult();
         }
 
         return await db.ExecuteInTransactionAsync(
             (transaction, token) => CreateAccountAsync(request, email, phoneNumber, clientIp, userManager, db, transaction, scopeFactory, logger, token),
             cancellationToken);
+    }
+
+    /** True when the phone number belongs to an Identity account or a People row. */
+    private static async Task<bool> IsPhoneNumberInUseAsync(
+        string phoneNumber,
+        UserManager<IdentityUser> userManager,
+        AutoServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var phoneLookupCandidates = ContactNormalization.BuildPhoneLookupCandidates(phoneNumber);
+        var inIdentity = await userManager.Users
+            .AnyAsync(x => x.PhoneNumber != null && phoneLookupCandidates.Contains(x.PhoneNumber.Trim()), cancellationToken);
+
+        return inIdentity || await db.People
+            .AsNoTracking()
+            .AnyAsync(p => p.PhoneNumber != null && phoneLookupCandidates.Contains(p.PhoneNumber), cancellationToken);
     }
 
     /** The retriable unit: Identity user, domain person, commit; every failure returns without a commit, so it rolls back. */
@@ -110,22 +112,8 @@ public static partial class AuthEndpoints
             return Results.ValidationProblem(createUserResult.ToValidationErrors());
         }
 
-        People person;
-
-        try
-        {
-            person = CreatePerson(request, identityUser.Id, email, phoneNumber);
-        }
-        catch (RegistrationRefusedException exception)
-        {
-            logger.LogWarning("Registration failed due to invalid input for {ParamName}.", exception.Key);
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                [exception.Key] = [exception.Message]
-            });
-        }
-
-        AddPerson(db, person);
+        var person = CreateMechanic(request, identityUser.Id, email, phoneNumber);
+        db.Mechanics.Add(person);
 
         try
         {
@@ -142,27 +130,12 @@ public static partial class AuthEndpoints
 
         // A mail failure never changes the registration outcome (user decision 2026-10-23),
         // so the send runs detached in its own DI scope.
-        if (person is Mechanic)
-        {
-            WelcomeMailDispatcher.Dispatch(scopeFactory, logger, person.Email, person.Name.ToString());
-        }
+        WelcomeMailDispatcher.Dispatch(scopeFactory, logger, person.Email, person.Name.ToString());
 
         return Results.Ok(new RegisterResponse(person.Id, PersonTypeResolver.Resolve(person), person.Email));
     }
 
-    private static void AddPerson(AutoServiceDbContext db, People person)
-    {
-        switch (person)
-        {
-            case Customer customer:
-                db.Customers.Add(customer);
-                break;
-            case Mechanic mechanic:
-                db.Mechanics.Add(mechanic);
-                break;
-        }
-    }
-
+    /** Field-level checks of the register body: required fields, formats, mechanic data and length caps. */
     private static Dictionary<string, string[]> ValidateRegisterRequest(RegisterRequest request)
     {
         var errors = new Dictionary<string, string[]>();
@@ -195,20 +168,7 @@ public static partial class AuthEndpoints
 
         if (isMechanic)
         {
-            AddRequired(errors, nameof(request.Specialization), request.Specialization);
-
-            if (request.Expertise is null || request.Expertise.Count == 0)
-            {
-                errors[nameof(request.Expertise)] = ["Mechanic registration requires at least one expertise item."];
-            }
-            else if (request.Expertise.Count > 10)
-            {
-                errors[nameof(request.Expertise)] = ["Mechanic expertise may contain at most 10 items."];
-            }
-            else if (request.Expertise.Count != request.Expertise.Distinct(StringComparer.OrdinalIgnoreCase).Count())
-            {
-                errors[nameof(request.Expertise)] = ["Mechanic expertise items must be unique."];
-            }
+            ValidateMechanicFields(request, errors);
         }
 
         FieldLengthValidator.AddMaxLengthError(errors, nameof(request.FirstName), request.FirstName?.Trim(), FieldLengthValidator.NameMaxLength);
@@ -221,22 +181,41 @@ public static partial class AuthEndpoints
         return errors;
     }
 
-    /** Creates a domain entity from the registration payload. Only mechanics are allowed for public registration. */
-    private static People CreatePerson(RegisterRequest request, string identityUserId, string email, string? phoneNumber)
+    /** Specialization and expertise rules of a mechanic registration. */
+    private static void ValidateMechanicFields(RegisterRequest request, Dictionary<string, string[]> errors)
+    {
+        AddRequired(errors, nameof(request.Specialization), request.Specialization);
+
+        if (!string.IsNullOrWhiteSpace(request.Specialization)
+            && !DefinedEnum.TryParse<SpecializationType>(request.Specialization, out _))
+        {
+            errors[nameof(request.Specialization)] = ["Specialization is invalid."];
+        }
+
+        if (request.Expertise is null || request.Expertise.Count == 0)
+        {
+            errors[nameof(request.Expertise)] = ["Mechanic registration requires at least one expertise item."];
+        }
+        else if (request.Expertise.Count > 10)
+        {
+            errors[nameof(request.Expertise)] = ["Mechanic expertise may contain at most 10 items."];
+        }
+        else if (request.Expertise.Count != request.Expertise.Distinct(StringComparer.OrdinalIgnoreCase).Count())
+        {
+            errors[nameof(request.Expertise)] = ["Mechanic expertise items must be unique."];
+        }
+        else if (!TryParseExpertise(request.Expertise, out _, out var invalidExpertise))
+        {
+            errors[nameof(request.Expertise)] = [$"Expertise value '{invalidExpertise}' is invalid."];
+        }
+    }
+
+    /** Builds the mechanic from a request that ValidateRegisterRequest already accepted. */
+    private static Mechanic CreateMechanic(RegisterRequest request, string identityUserId, string email, string? phoneNumber)
     {
         var fullName = new FullName(request.FirstName.Trim(), ContactNormalization.NormalizeOptional(request.MiddleName), request.LastName.Trim());
-
-        if (!string.Equals(request.PersonType, "mechanic", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new RegistrationRefusedException(nameof(request.PersonType), "Registration is only available for mechanics.");
-        }
-
-        if (!DefinedEnum.TryParse<SpecializationType>(request.Specialization, out var specialization))
-        {
-            throw new RegistrationRefusedException(nameof(request.Specialization), "Specialization is invalid.");
-        }
-
-        var expertise = ParseExpertise(request.Expertise ?? []);
+        _ = DefinedEnum.TryParse<SpecializationType>(request.Specialization, out var specialization);
+        _ = TryParseExpertise(request.Expertise ?? [], out var expertise, out _);
 
         return new Mechanic(fullName, email, phoneNumber, specialization, expertise)
         {
@@ -244,23 +223,27 @@ public static partial class AuthEndpoints
         };
     }
 
-    private static List<ExpertiseType> ParseExpertise(IReadOnlyCollection<string> expertiseValues)
+    /** Parses every expertise value; false with the first invalid value when one is not a defined expertise. */
+    private static bool TryParseExpertise(IReadOnlyCollection<string> expertiseValues, out List<ExpertiseType> expertise, out string? invalidValue)
     {
-        var expertise = new List<ExpertiseType>();
+        expertise = [];
+        invalidValue = null;
 
         foreach (var expertiseValue in expertiseValues)
         {
             if (!DefinedEnum.TryParse<ExpertiseType>(expertiseValue, out var parsedValue))
             {
-                throw new RegistrationRefusedException(nameof(expertiseValues), $"Expertise value '{expertiseValue}' is invalid.");
+                invalidValue = expertiseValue;
+                return false;
             }
 
             expertise.Add(parsedValue);
         }
 
-        return expertise;
+        return true;
     }
 
+    /** The one 400 answer of every refused registration, so a taken email or phone stays indistinguishable. */
     private static IResult CreateRegistrationFailedResult()
     {
         return Results.ValidationProblem(new Dictionary<string, string[]>

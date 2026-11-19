@@ -61,9 +61,18 @@ function trapTab(event: KeyboardEvent, dialog: HTMLElement): void {
 function returnFocus(opener: Element | null, dialog: HTMLElement): void {
   const active = document.activeElement;
   const isFocusFree = active === null || active === document.body || dialog.contains(active);
-  if (isFocusFree && opener instanceof HTMLElement && opener.isConnected) {
-    opener.focus();
+  if (!isFocusFree) {
+    return;
   }
+
+  if (opener instanceof HTMLElement && opener.isConnected) {
+    opener.focus();
+    return;
+  }
+
+  // The opener is gone: fall back to the next open dialog, else the main content.
+  const nextDialog = [...document.querySelectorAll<HTMLElement>('dialog[open]')].filter((other) => other !== dialog).at(-1);
+  (nextDialog ?? document.getElementById('main-content'))?.focus();
 }
 
 /** Gives the open dialog its modal keyboard behaviour (initial focus, Tab trap, Escape, focus return); returns its ref. */

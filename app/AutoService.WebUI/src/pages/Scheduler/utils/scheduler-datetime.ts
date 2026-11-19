@@ -16,9 +16,9 @@ function toStartOfDay(date: Date): Date {
   return copy;
 }
 
-/** Returns `true` when the given date falls before today (ignoring time). */
-export function isPastCalendarDay(date: Date): boolean {
-  return toStartOfDay(date).getTime() < toStartOfDay(new Date()).getTime();
+/** Local midnight of the day holding the given timestamp, as a timestamp. */
+export function startOfDayTimestamp(timestamp: number): number {
+  return toStartOfDay(new Date(timestamp)).getTime();
 }
 
 /** Checks whether an appointment is scheduled on the given calendar day, in local time. */
@@ -28,9 +28,4 @@ export function isScheduledOn(appointment: AppointmentDto, day: Date): boolean {
   return scheduledDate.getFullYear() === day.getFullYear()
     && scheduledDate.getMonth() === day.getMonth()
     && scheduledDate.getDate() === day.getDate();
-}
-
-/** Checks whether an appointment is scheduled today in local time. */
-export function isScheduledToday(appointment: AppointmentDto): boolean {
-  return isScheduledOn(appointment, new Date());
 }

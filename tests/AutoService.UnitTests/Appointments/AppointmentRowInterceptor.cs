@@ -27,7 +27,7 @@ internal sealed partial class AppointmentRowInterceptor(IReadOnlyDictionary<stri
             var index = 0;
             foreach (Match column in SelectedColumn().Matches(selectList))
             {
-                // Only the first alias holds the appointment, vehicle and customer; the joined mechanics and quotes stay NULL.
+                // Only the first alias holds the appointment and vehicle; the joined mechanics and quotes stay NULL.
                 var value = column.Groups[1].Value == "s" ? row.GetValueOrDefault(column.Groups[2].Value) : null;
                 table.Columns.Add($"c{index++}", typeof(object));
                 values.Add(value ?? DBNull.Value);

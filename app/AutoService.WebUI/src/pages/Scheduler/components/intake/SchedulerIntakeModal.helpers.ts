@@ -54,6 +54,7 @@ function getIntakeErrorDetail(error: unknown): string {
   return isIntakeApiError(data) ? (data.detail?.toLowerCase() ?? '') : '';
 }
 
+/** True when the detail contains any of the terms. */
 function matchesAnyDetailTerm(detail: string, terms: readonly string[]): boolean {
   return terms.some((term) => detail.includes(term));
 }
@@ -253,7 +254,7 @@ function enrichPayloadByLookupState(params: {
 }
 
 /** Vehicle form fields that hold a number and are clamped into a range while typing. */
-export type RangedVehicleField = keyof typeof VEHICLE_NUMERIC_LIMITS;
+type RangedVehicleField = keyof typeof VEHICLE_NUMERIC_LIMITS;
 
 /** Narrows a vehicle form field to the numeric ones that have a range in {@link VEHICLE_NUMERIC_LIMITS}. */
 export function isRangedVehicleField(field: keyof VehicleFormState): field is RangedVehicleField {
@@ -261,7 +262,7 @@ export function isRangedVehicleField(field: keyof VehicleFormState): field is Ra
 }
 
 /** Form state the intake request is built from. */
-export interface IntakeFormSnapshot {
+interface IntakeFormSnapshot {
   readonly lookupState: LookupState;
   readonly normalizedEmail: string;
   readonly dueDateTime: string;

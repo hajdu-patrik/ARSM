@@ -14,11 +14,13 @@ import {
   pageShellClass,
   pageSubtitleClass,
   pageTitleClass,
+  segmentedTrackClass,
 } from '../../utils/formStyles';
 
 /** Segmented control with a wider second track, so the long HU "Munkadíjtípusok" tab fits at 320px. */
-const inventoryTabListClass = 'grid min-w-0 max-w-md grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-1.5 rounded-xl bg-ui-toggle p-1.5';
+const inventoryTabListClass = `grid min-w-0 max-w-md grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-1.5 ${segmentedTrackClass}`;
 
+/** Route component of `/inventory`: the tab strip, the active tab and the shared dialogs of both kinds. */
 export const InventoryPage = memo(function InventoryPage() {
   const { t, i18n } = useTranslation();
   const showErrorToast = useToastStore((state) => state.showError);
@@ -113,4 +115,3 @@ export const InventoryPage = memo(function InventoryPage() {
     </div>
   );
 });
-

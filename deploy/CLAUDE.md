@@ -3,8 +3,8 @@
 ## Scope
 
 - Applies to `deploy/**`: the Azure production kit (`azure/*.bicep`, `api.Dockerfile`, `web.Dockerfile`, `nginx/`,
-  `gate/`, `extract-csp.mjs`), the local test instance kit (`local-test/`) and the guides in `docs/`.
-- `scripts/deploy-azure.py` drives the Azure kit (rules in `scripts/CLAUDE.md`), `local-test/deploy.py` the test instance.
+  `gate/`, `extract-csp.mjs`), the kit of the removed local test instance (`local-test/`) and the guides in `docs/`.
+- `scripts/deploy-azure.py` drives the Azure kit (rules in `scripts/CLAUDE.md`), `local-test/deploy.py` the removed test instance's kit.
 
 ## Core Rules
 

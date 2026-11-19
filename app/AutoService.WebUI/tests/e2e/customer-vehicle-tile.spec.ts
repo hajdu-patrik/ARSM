@@ -1,23 +1,18 @@
 /** The whole vehicle tile selects the vehicle and shows its history beside the list; the row actions on the
  * tile keep their own behaviour and never select it. */
 import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { ANNA_VEHICLE_ROW, CustomersPage } from './pages/customers.page';
-import { installApiMocks } from './support/api-mocks';
-import { getAppointmentFlowEnv } from './support/e2e-env';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 
-const showHistoryLabel = /^(Show vehicle history|Járműelőzmények megjelenítése)$/i;
-const hideHistoryLabel = /^(Hide vehicle history|Járműelőzmények elrejtése)$/i;
+/** The tile's select button is named by its plate; aria-expanded carries the shown state, the title the action. */
+const historyButtonName = /^[A-Z0-9-]+ (vehicle repair history|jármű javítási előzményei)$/i;
+
+/** Click offset from the tile edge, clear of the row actions on the right. */
+const tileEdgeInsetPx = 10;
 
 /** Signs in as a mechanic and expands Anna's card, which shows her two vehicles. */
 async function openAnna(page: Page): Promise<CustomersPage> {
-  const env = getAppointmentFlowEnv();
-  await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  await new AuthPage(page).loginAsMechanic(env);
-
-  const customersPage = new CustomersPage(page);
-  await customersPage.goto();
+  const { customersPage } = await CustomersPage.open(page);
   await customersPage.expandCustomer(MOCK_CUSTOMER_IDS.anna);
 
   return customersPage;
@@ -35,12 +30,15 @@ test.describe('Customer vehicle tile selection', () => {
       throw new Error('The vehicle tile has no layout box.');
     }
 
-    await expect(tile.getByRole('button', { name: showHistoryLabel })).toHaveCount(1);
-    await tile.click({ position: { x: 12, y: box.height - 8 } });
+    const selectButton = tile.getByRole('button', { name: historyButtonName });
+    await expect(selectButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(selectButton).toHaveAttribute('title', 'Show vehicle history');
+    await tile.click({ position: { x: tileEdgeInsetPx, y: box.height - tileEdgeInsetPx } });
     await customersPage.expectVehicleHistoryOnlyPanel('NXE-441');
-    await expect(tile.getByRole('button', { name: hideHistoryLabel })).toHaveCount(1);
+    await expect(selectButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(selectButton).toHaveAttribute('title', 'Hide vehicle history');
 
-    await tile.click({ position: { x: box.width / 2, y: 12 } });
+    await tile.click({ position: { x: box.width / 2, y: tileEdgeInsetPx } });
     await customersPage.expectCustomerHistoryPanel();
   });
 
@@ -79,7 +77,7 @@ test.describe('Customer vehicle tile selection', () => {
     await expect(dialog).toHaveCount(0);
 
     await customersPage.expectCustomerHistoryPanel();
-    await expect(tile.getByRole('button', { name: showHistoryLabel })).toHaveCount(1);
+    await expect(tile.getByRole('button', { name: historyButtonName })).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('the tile no longer carries a separate history icon button', async ({ page }) => {
@@ -87,12 +85,14 @@ test.describe('Customer vehicle tile selection', () => {
     const tile = customersPage.vehicleTile(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.nxe441);
 
     await expect(tile.getByRole('button')).toHaveCount(3);
-    await expect(tile.getByRole('button', { name: /vehicle history/i })).toHaveAttribute('data-testid', 'vehicle-select-button');
+    await expect(tile.getByRole('button', { name: historyButtonName })).toHaveAttribute('data-testid', 'vehicle-select-button');
+    await expect(tile.getByRole('button', { name: 'NXE-441 vehicle repair history' })).toHaveCount(1);
   });
 });
 
 test.describe('Customer vehicle tile selection at 320px', () => {
   test.use({ viewport: { width: 320, height: 900 } });
+  const touchTargetPx = 44;
 
   test('a tap on the tile shows the vehicle history', async ({ page }) => {
     const customersPage = await openAnna(page);
@@ -100,5 +100,41 @@ test.describe('Customer vehicle tile selection at 320px', () => {
 
     await tile.click();
     await customersPage.expectVehicleHistoryOnlyPanel('NXE-441');
+  });
+
+  test('the tile fits the viewport and its row actions keep 44px targets without colliding', async ({ page }) => {
+    const customersPage = await openAnna(page);
+    const tile = customersPage.vehicleTile(MOCK_CUSTOMER_IDS.anna, ANNA_VEHICLE_ROW.nxe441);
+    const tileBox = await tile.boundingBox();
+    if (tileBox === null) {
+      throw new Error('The vehicle tile has no layout box.');
+    }
+
+    expect(tileBox.x).toBeGreaterThanOrEqual(0);
+    expect(tileBox.x + tileBox.width).toBeLessThanOrEqual(320);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+
+    const actionBoxes = [];
+    const actions = [tile.getByTestId('vehicle-create-quote-button'), tile.getByRole('button', { name: 'Edit vehicle' })];
+    for (const button of actions) {
+      await expect(button).toBeVisible();
+      const box = await button.boundingBox();
+      if (box === null) {
+        throw new Error('A row action has no layout box.');
+      }
+      expect(box.width).toBeGreaterThanOrEqual(touchTargetPx);
+      expect(box.height).toBeGreaterThanOrEqual(touchTargetPx);
+      expect(box.x).toBeGreaterThanOrEqual(tileBox.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(tileBox.x + tileBox.width);
+      actionBoxes.push(box);
+    }
+
+    const [first, second] = actionBoxes;
+    if (first === undefined || second === undefined) {
+      throw new Error('Both row actions need a layout box.');
+    }
+    const apart = first.x + first.width <= second.x || second.x + second.width <= first.x
+      || first.y + first.height <= second.y || second.y + second.height <= first.y;
+    expect(apart).toBe(true);
   });
 });

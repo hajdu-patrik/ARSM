@@ -70,7 +70,8 @@ public static partial class ProfileEndpoints
 
         if (!string.IsNullOrWhiteSpace(jwtId) && tokenExpiresAtUtc.HasValue)
         {
-            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, cancellationToken);
+            // The password is already changed, so an aborted request must not skip the revocation.
+            await tokenDenylistService.RevokeAsync(jwtId, tokenExpiresAtUtc.Value, CancellationToken.None);
         }
 
         // Persisted by the unit below; the issuer dates the replacement at the staged cutoff, other devices lose theirs after the commit.
@@ -97,7 +98,7 @@ public static partial class ProfileEndpoints
                 var replacement = new RefreshToken(mechanicId, newRefreshTokenHash, nowUtc, refreshTokenExpiresAtUtc, clientIpHash, userAgent);
                 return await SavePasswordChangeAsync(mechanicId, cutoffUtc, replacement, nowUtc, db, transaction, token);
             },
-            cancellationToken,
+            CancellationToken.None,
             // The replacement token commits with the rest of the unit, so its presence proves an ambiguous commit landed.
             verifySucceeded: async token => new ExecutionResult<bool>(
                 await db.RefreshTokens.AnyAsync(rt => rt.TokenHash == newRefreshTokenHash, token), true));

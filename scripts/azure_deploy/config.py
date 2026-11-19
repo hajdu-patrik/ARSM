@@ -18,7 +18,8 @@ from .errors import ConfigError
 from .masking import SecretMasker, secret_values_of
 from .validators import KEY_CHECKS, parse_whole_number
 
-TEMPLATE_MARKERS = ("CHANGE_ME", "CHANGEME", "SET_UNIQUE_LOCAL")
+# Matched after upper-casing and stripping non-alphanumerics, like TemplateMarkerDetector.cs.
+TEMPLATE_MARKERS = ("CHANGEME", "SETUNIQUELOCAL")
 # Keys that must never share a value: the prod gate token versus the teszt one, the API's database login versus
 # the administrator; the prod admin may reuse the dev admin login (user decision, 2026-10-18).
 DISTINCT_FROM = {
@@ -100,8 +101,8 @@ def collect_issues(raw: dict[str, str]) -> list[KeyIssue]:
         value = effective.get(key, "")
         if not value:
             continue
-        upper = value.upper()
-        if any(marker in upper for marker in TEMPLATE_MARKERS):
+        normalized = "".join(char for char in value.upper() if char.isalnum())
+        if any(marker in normalized for marker in TEMPLATE_MARKERS):
             issues.append(KeyIssue(key, "still holds a template placeholder"))
             continue
         check = KEY_CHECKS.get(key)

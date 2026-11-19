@@ -14,10 +14,11 @@ from pathlib import Path
 from typing import Sequence
 from urllib.parse import unquote, urlparse
 
-from httpyac_summary import extract_failed_http_requests, extract_http_summary
+from httpyac_summary import _extract_json_payload, extract_failed_http_requests, extract_http_summary
 from test_suite_secrets import POSTGRES_URI_PATTERN, EnvironmentLoader, OutputSanitizer
 
 TARGET_ORDER = ("playwright", "http", "sql")
+HTTPYAC_PACKAGE = "httpyac@6.16.7"  # exact pin, latest stable at least 7 days old (published 2025-03-30)
 
 # Behaviour HTTPYAC cannot express (see tests/CLAUDE.md Coverage Anchors); each tuple is
 # (report key, command label, script path, human-readable name).
@@ -244,11 +245,11 @@ class LocalTestRunner:
     def _run_http(self) -> SuiteResult:
         """Execute HTTP endpoint test suite via HTTPYAC plus the streaming/behaviour checks."""
         npx = self._required_executable("npx")
-        environment = {**self.environment, "NODE_TLS_REJECT_UNAUTHORIZED": "0"}
+        environment = {**self.environment, "NODE_TLS_REJECT_UNAUTHORIZED": "0", "npm_config_ignore_scripts": "true"}
         httpyac_flags = ["--all", "--json", "--output", "short", "--output-failed", "short", "--filter", "only-failed"]
 
         # httpyac runs files in no stable order, so the test-account provisioning in _setup runs on its own first.
-        setup = self.command_runner.run("http-setup", [npx, "--yes", "httpyac", "tests/API/_setup/*.http", *httpyac_flags], self.root_dir, environment)
+        setup = self.command_runner.run("http-setup", [npx, "--yes", HTTPYAC_PACKAGE, "tests/API/_setup/*.http", *httpyac_flags], self.root_dir, environment)
 
         script_results = [
             (detail_key, self.command_runner.run(command_name, [sys.executable, script], self.root_dir, environment), label)
@@ -257,7 +258,7 @@ class LocalTestRunner:
 
         result = self.command_runner.run(
             "http",
-            [npx, "--yes", "httpyac", "tests/API/**/*.http", *httpyac_flags],
+            [npx, "--yes", HTTPYAC_PACKAGE, "tests/API/**/*.http", *httpyac_flags],
             self.root_dir,
             environment,
         )
@@ -271,7 +272,7 @@ class LocalTestRunner:
         output = setup.stdout + setup.stderr + result.stdout + result.stderr
 
         for detail_key, script_result, label in script_results:
-            script_details = self._extract_json_payload(script_result.stdout) or {
+            script_details = _extract_json_payload(script_result.stdout) or {
                 "status": "failed",
                 "error": f"{label} did not return JSON output.",
             }
@@ -300,7 +301,7 @@ class LocalTestRunner:
                     "exec",
                     "-i",
                     "-e",
-                    f"PGPASSWORD={connection.password}",
+                    "PGPASSWORD",
                     container,
                     "psql",
                     "-U",
@@ -316,7 +317,7 @@ class LocalTestRunner:
                     "-",
                 ],
                 self.root_dir,
-                self.environment,
+                {**self.environment, "PGPASSWORD": connection.password},
                 input_text=sql_file.read_text(encoding="utf-8"),
             )
             files.append(
@@ -375,30 +376,6 @@ class LocalTestRunner:
     def _command_suite_result(self, name: str, result: CommandResult) -> SuiteResult:
         status = "passed" if result.return_code == 0 else "failed"
         return SuiteResult(name, status, result.return_code, output_tail=self._tail(result.stdout + result.stderr))
-
-    @staticmethod
-    def _extract_json_payload(output: str) -> dict[str, object] | None:
-        try:
-            payload = json.loads(output)
-            if isinstance(payload, dict):
-                return payload
-        except json.JSONDecodeError:
-            pass
-
-        decoder = json.JSONDecoder()
-        for index, char in enumerate(output):
-            if char != "{":
-                continue
-
-            try:
-                payload, _ = decoder.raw_decode(output[index:])
-            except json.JSONDecodeError:
-                continue
-
-            if isinstance(payload, dict):
-                return payload
-
-        return None
 
     @staticmethod
     def _tail(output: str, limit: int = 40) -> list[str]:

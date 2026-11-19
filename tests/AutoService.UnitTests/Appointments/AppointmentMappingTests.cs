@@ -56,7 +56,7 @@ public sealed class AppointmentMappingTests
             new[]
             {
                 new AppointmentEndpoints.MechanicSummaryDto(5, "Béla Szabó", "All", true),
-                new AppointmentEndpoints.MechanicSummaryDto(6, "Cili Mária Nagy", "HybridAndElectric", true),
+                new AppointmentEndpoints.MechanicSummaryDto(6, "Cili Mária Nagy", "HybridAndElectric", false),
                 new AppointmentEndpoints.MechanicSummaryDto(8, "Dani Kis", "GasolineAndDiesel", false),
             },
             dto.Mechanics);

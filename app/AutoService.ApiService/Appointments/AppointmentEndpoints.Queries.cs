@@ -37,7 +37,7 @@ public static partial class AppointmentEndpoints
                 m.Id,
                 ProjectionFormat.FullName(m.Name.FirstName, m.Name.MiddleName, m.Name.LastName),
                 ProjectionFormat.EnumName(m.Specialization),
-                m.ProfilePictureObjectKey != null || m.ProfilePictureContentType != null))
+                ProjectionFormat.HasProfilePicture(m.ProfilePictureObjectKey)))
             .ToList(),
         a.Version,
         a.Quotes.Any(q => q.Status == QuoteStatus.Accepted),

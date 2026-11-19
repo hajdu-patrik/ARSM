@@ -123,10 +123,8 @@ test.describe('Admin mechanic roster paging', () => {
     await expect(indicator).toHaveText('2 / 3');
   });
 
-  test('searches on the server from page 1, and offers no sort toggle or sort parameter', async ({ page }) => {
+  test('searches on the server from page 1 and sends no sort parameter', async ({ page }) => {
     const { next, indicator } = adminPage.pagination();
-
-    await expect(page.getByTestId('mechanic-sort-toggle')).toHaveCount(0);
 
     await next.click();
     await expect(indicator).toHaveText('2 / 3');

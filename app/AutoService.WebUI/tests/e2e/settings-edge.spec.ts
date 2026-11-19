@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { PREF_LANGUAGE_KEY, PREF_THEME_KEY } from '../../src/utils/browserStorageKeys';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
 
@@ -25,7 +26,7 @@ test.describe('Settings theme and language toggles', () => {
 
     await expect(themeToggle.locator('svg.lucide-moon')).toBeVisible();
     await expect(page.locator('html')).toHaveClass(/\bdark\b/);
-    expect(await page.evaluate(() => localStorage.getItem('arsm.pref.theme'))).toBe('dark');
+    expect(await page.evaluate((key) => localStorage.getItem(key), PREF_THEME_KEY)).toBe('dark');
 
     // The language button names the language it switches to: English is active, so it offers HU.
     await expect(languageToggle).toHaveText('HU');
@@ -33,7 +34,7 @@ test.describe('Settings theme and language toggles', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'hu');
     await expect(languageToggle).toHaveText('EN');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('arsm.pref.language'))).toBe('hu');
+    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), PREF_LANGUAGE_KEY)).toBe('hu');
   });
 });
 
@@ -54,7 +55,7 @@ test.describe('Theme default', () => {
     const html = page.locator('html');
 
     await expect(html).toHaveClass(/\bdark\b/);
-    expect(await page.evaluate(() => localStorage.getItem('arsm.pref.theme'))).toBeNull();
+    expect(await page.evaluate((key) => localStorage.getItem(key), PREF_THEME_KEY)).toBeNull();
 
     await page.emulateMedia({ colorScheme: 'light' });
     await expect(html).not.toHaveClass(/\bdark\b/);
@@ -68,7 +69,7 @@ test.describe('Theme default', () => {
 
     await page.getByTestId('theme-mode-toggle').click();
     await expect(html).not.toHaveClass(/\bdark\b/);
-    expect(await page.evaluate(() => localStorage.getItem('arsm.pref.theme'))).toBe('light');
+    expect(await page.evaluate((key) => localStorage.getItem(key), PREF_THEME_KEY)).toBe('light');
 
     // The system goes light and back to dark; the picked light theme stays.
     await page.emulateMedia({ colorScheme: 'light' });

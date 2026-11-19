@@ -6,6 +6,7 @@ import { ArrowUpDown, X } from 'lucide-react';
 import type { AppointmentStatus } from '../../../../types/scheduler/scheduler.types';
 import { Dropdown } from '../../../../components/common/Dropdown';
 import { filterSelectCompactWrapperClass, smallIconClass, toneDotClasses, toneFilterChipClasses } from '../../../../utils/formStyles';
+import { appointmentStatusLabelKey } from '../../utils/appointmentStatusLabel';
 import { APPOINTMENT_STATUS_TONE } from '../../utils/appointmentStatusTone';
 import { schedulerChipLabelClass, schedulerMonthClearFilterButtonClass, schedulerSortButtonClass, schedulerStatusFilterChipButtonClass } from '../../utils/schedulerButtonStyles';
 
@@ -104,7 +105,7 @@ export const MonthAppointmentFilters = memo(function MonthAppointmentFilters({
             className={`${schedulerStatusFilterChipButtonClass} ${chipStateClass}`}
           >
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${toneDotClasses[tone]}`} aria-hidden="true" />
-            <span>{t(`scheduler.status.${status.toLowerCase()}`)}</span>
+            <span>{t(appointmentStatusLabelKey(status))}</span>
           </button>
         );
       })}

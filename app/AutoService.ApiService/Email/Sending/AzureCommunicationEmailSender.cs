@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Communication.Email;
+using Azure.Identity;
 using AcsAttachment = Azure.Communication.Email.EmailAttachment;
 using AcsMessage = Azure.Communication.Email.EmailMessage;
 
@@ -11,6 +12,7 @@ public sealed class AzureCommunicationEmailSender(
     EmailSettings settings,
     ILogger<AzureCommunicationEmailSender> logger) : IEmailSender
 {
+    /** Validates the recipient and subject, skips reserved domains, then sends and maps the outcome to a result. */
     public async Task<EmailSendResult> SendAsync(EmailMessage message, CancellationToken cancellationToken)
     {
         var recipient = message.To.Trim();
@@ -50,6 +52,16 @@ public sealed class AzureCommunicationEmailSender(
                 exception.Status == 0 ? null : exception.Status,
                 $"Communication Services {exception.Status} {exception.ErrorCode}".TrimEnd(),
                 retryable);
+        }
+        catch (Exception exception) when (
+            exception is AuthenticationFailedException
+            || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+        {
+            // The 15 s network timeout surfaces as a cancellation, a failed token fetch as an auth error; a retry can succeed.
+            logger.LogWarning(
+                "Communication Services could not be reached for a {RecipientDomain} recipient: {FailureType}",
+                domain, exception.GetType().Name);
+            return EmailSendResult.Failure(null, $"Communication Services unreachable: {exception.GetType().Name}", retryable: true);
         }
     }
 

@@ -9,10 +9,13 @@ interface AutofillResetCallbacks {
   readonly onConfirmNewPasswordChange: (value: string) => void;
 }
 
-/** Locks a password field again after its controlled value is cleared. */
+/** Locks a password field again after its controlled value is cleared, unless the user is typing in it. */
 export function useLockFieldWhenEmpty(value: string, setLocked: Dispatch<SetStateAction<boolean>>): void {
   useEffect(() => {
-    if (value.length === 0) {
+    const active = document.activeElement;
+    const isTypingInPasswordField = active instanceof HTMLInputElement
+      && Object.values(PASSWORD_FIELD_IDS).includes(active.id);
+    if (value.length === 0 && !isTypingInPasswordField) {
       setLocked(true);
     }
   }, [setLocked, value]);

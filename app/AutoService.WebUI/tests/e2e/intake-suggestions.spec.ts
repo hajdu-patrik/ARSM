@@ -1,15 +1,16 @@
 /** Scheduler intake customer-name suggestions: five per page with arrows, a fresh query starts at page 1,
  * and the name and plate filters exclude each other with an info note (never an error), in EN and HU. */
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { SchedulerPage } from './pages/scheduler.page';
-import { installApiMocks } from './support/api-mocks';
-import { getAppointmentFlowEnv } from './support/e2e-env';
+import { signInWithMocks } from './support/sign-in';
 import type { MockApiState } from './support/test-data';
 import { toastRegion } from './support/toast';
 
 const SEEDED_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const SUGGESTIONS_PER_PAGE = 5;
+/** Each pick button carries the customer's name after the verb, so only the verb is matched. */
+const SELECT_EN = /^Select /;
+const SELECT_HU = /^Kiválasztás: /;
 
 /** Adds ten more Kovacs customers after Anna and Adam, so the name lookup finds twelve: pages of 5, 5 and 2. */
 function seedKovacsCustomers(state: MockApiState): void {
@@ -28,10 +29,7 @@ function seedKovacsCustomers(state: MockApiState): void {
 
 /** Signs in with twelve Kovacs customers known to the lookup and opens the intake dialog for today. */
 async function openIntake(page: Page, language: 'en' | 'hu'): Promise<{ schedulerPage: SchedulerPage; dialog: Locator }> {
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  seedKovacsCustomers(state);
-  await new AuthPage(page).loginAsMechanic(env, language);
+  await signInWithMocks(page, {}, language, seedKovacsCustomers);
 
   const schedulerPage = new SchedulerPage(page);
   await schedulerPage.goto();
@@ -44,7 +42,7 @@ test.describe('Scheduler intake name suggestions (EN)', () => {
   test('shows five suggestions at a time with arrows, and a new query starts at page 1', async ({ page }) => {
     const { schedulerPage, dialog } = await openIntake(page, 'en');
     const { previous, next, indicator } = schedulerPage.suggestionsPagination();
-    const selectButtons = dialog.getByRole('button', { name: 'Select', exact: true });
+    const selectButtons = dialog.getByRole('button', { name: SELECT_EN });
 
     await schedulerPage.searchByName('Kovacs');
 
@@ -79,7 +77,7 @@ test.describe('Scheduler intake name suggestions (EN)', () => {
     await next.click();
     await expect(indicator).toHaveText('3 / 3');
 
-    await dialog.getByRole('button', { name: 'Select', exact: true }).first().click();
+    await dialog.getByRole('button', { name: SELECT_EN }).first().click();
 
     await expect(dialog.getByText('Existing customer selected')).toBeVisible();
     await expect(dialog.getByText('seed.i.kovacs@example.test')).toBeVisible();
@@ -121,7 +119,7 @@ test.describe('Scheduler intake name suggestions (HU)', () => {
 
     await expect(dialog.getByText('12 ügyfél találat', { exact: true })).toBeVisible();
     await expect(indicator).toHaveText('1 / 3');
-    await expect(dialog.getByRole('button', { name: 'Kiválasztás', exact: true })).toHaveCount(SUGGESTIONS_PER_PAGE);
+    await expect(dialog.getByRole('button', { name: SELECT_HU })).toHaveCount(SUGGESTIONS_PER_PAGE);
     await expect(previous).toHaveAccessibleName('Előző oldal');
     await expect(next).toHaveAccessibleName('Következő oldal');
 

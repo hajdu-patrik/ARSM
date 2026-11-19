@@ -10,6 +10,7 @@ import { useQuoteCustomerEmail } from './useQuoteCustomerEmail';
 import type { QuoteEditorState } from './useQuoteEditor';
 import { CUSTOMER_EMAIL_MISSING_CODE, type QuoteWriteOutcome } from './useQuoteWriteOutcome';
 
+/** Success toast key of the status a quote moved to. */
 const STATUS_TOAST_KEYS: Record<QuoteStatus, string> = {
   Draft: 'quotes.toasts.quoteUpdated',
   Sent: 'quotes.toasts.quoteSent',
@@ -29,7 +30,7 @@ interface ChangeStatusVariables {
   quoteId: number;
   vehicleId: number;
   request: ChangeQuoteStatusRequest;
-  /** True for the send that follows the saved customer address, so a refusal is toasted instead of reopening the dialog. */
+  /** True for the send after the saved customer address: a refusal toasts instead of reopening the dialog. */
   isAfterCustomerEmail?: boolean;
 }
 
@@ -40,7 +41,7 @@ interface UseQuoteLifecycleMutationsParams {
   showErrorToast: (messageKey: string) => void;
 }
 
-/** Wires status changes and deletion to the editor and the delete modal; both change the revenue report, so each marks it stale. */
+/** Wires status changes and deletion to the editor and the delete modal; each marks the revenue report stale. */
 export function useQuoteLifecycleMutations({ editor, outcome, showSuccessToast, showErrorToast }: UseQuoteLifecycleMutationsParams) {
   const { adoptWrite, handleWriteError } = outcome;
   const { invalidateReport, invalidateScheduler, removeQuote } = useQuoteCache();
@@ -52,7 +53,7 @@ export function useQuoteLifecycleMutations({ editor, outcome, showSuccessToast, 
   const { close: closeEditor, quote } = editor;
   const [deleteTarget, setDeleteTarget] = useState<DeleteQuoteTarget | null>(null);
 
-  const { mutate: changeStatus, isPending: isChangingStatus } = useMutation({
+  const { mutate: changeStatus, isPending: isChangingStatus, variables: statusVariables } = useMutation({
     networkMode: QUOTE_WRITE_NETWORK_MODE,
     mutationFn: (variables: ChangeStatusVariables) => quoteService.changeStatus(variables.quoteId, variables.request),
     onSuccess: (updated, variables) => {
@@ -89,7 +90,11 @@ export function useQuoteLifecycleMutations({ editor, outcome, showSuccessToast, 
       showSuccessToast('quotes.toasts.quoteDeleted');
       invalidateReport();
     },
-    onError: (error, target) => handleWriteError(error, 'quotes.errors.deleteFailed', target.id),
+    onError: (error, target) => {
+      // The confirmation holds the version it opened at, so a refused delete closes it instead of retrying.
+      setDeleteTarget(null);
+      return handleWriteError(error, 'quotes.errors.deleteFailed', target.id);
+    },
   });
 
   const handleChangeStatus = useCallback((status: QuoteStatus) => {
@@ -137,6 +142,7 @@ export function useQuoteLifecycleMutations({ editor, outcome, showSuccessToast, 
     ...customerEmailDialog,
     handleConfirmCustomerEmail,
     isChangingStatus,
+    changingStatusTo: isChangingStatus ? statusVariables.request.status : null,
     isDeletingQuote,
     deleteTarget,
     handleChangeStatus,

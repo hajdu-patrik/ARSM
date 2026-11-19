@@ -66,7 +66,20 @@ class SelectSpecsTests(TempDirCase):
     def test_selections_of_several_files_are_united(self) -> None:
         self.write("route-guards.spec.ts")
         files = ["src/pages/Settings/Page.tsx", "tests/e2e/route-guards.spec.ts"]
-        self.assertEqual(select.select_specs(files), {"settings-edge", "settings-profile", "settings-password", "settings-picture", "settings-account", "settings-lockout", "settings-company", AXE, "route-guards"})
+        self.assertEqual(select.select_specs(files), {"settings-edge", "settings-profile", "settings-password", "settings-picture", "settings-account", "settings-lockout", "settings-company", "settings-dialog-guards", AXE, "route-guards"})
+
+    def test_the_customers_service_selects_the_same_specs_as_the_customers_pages(self) -> None:
+        self.assertEqual(select.FEATURE_SPECS["src/services/customers"], select.FEATURE_SPECS["src/pages/Customers/"])
+
+    def test_intl_format_has_no_rule_so_it_selects_the_full_suite(self) -> None:
+        self.assertNotIn("src/utils/intlFormat.ts", select.FEATURE_SPECS)
+        self.assertIsNone(select.select_specs(["src/utils/intlFormat.ts"]))
+
+    def test_search_highlight_and_plate_in_name_are_registered_where_the_feature_lives(self) -> None:
+        for prefix, spec in (("src/pages/Scheduler/", "scheduler-intake-plate-in-name"),
+                             ("src/pages/Inventory/", "search-highlight"), ("src/pages/Quotes/", "search-highlight")):
+            with self.subTest(prefix=prefix, spec=spec):
+                self.assertIn(spec, select.FEATURE_SPECS[prefix])
 
     def test_markdown_does_not_mask_an_unmapped_file(self) -> None:
         self.assertIsNone(select.select_specs(["README.md", "package.json"]))

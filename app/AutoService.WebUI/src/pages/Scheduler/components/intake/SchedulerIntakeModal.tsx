@@ -1,5 +1,5 @@
 /** Scheduler intake modal: customer lookup, vehicle choice and task for a new appointment on the selected day. */
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SchedulerCreateIntakeRequest } from '../../../../types/scheduler/scheduler.types';
 import { Modal } from '../../../../components/common/Modal';
@@ -43,23 +43,30 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
     return formatLongDate(selectedDate, i18n.language);
   }, [i18n.language, selectedDate]);
 
+  const handleClose = useCallback(() => {
+    if (!state.isSubmitting) {
+      onClose();
+    }
+  }, [onClose, state.isSubmitting]);
+
   return (
     <Modal
       isOpen
-      onClose={onClose}
+      onClose={handleClose}
       title={translate('scheduler.intake.title')}
       widthClassName="max-w-2xl"
       fitViewport
-      footer={derived.canCreateIntake
-        ? (
-          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className={`${secondaryButtonClass} w-full sm:w-auto`}
-            >
-              {translate('common.actions.cancel')}
-            </button>
+      footer={(
+        <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={state.isSubmitting}
+            className={`${secondaryButtonClass} w-full sm:w-auto`}
+          >
+            {translate('common.actions.cancel')}
+          </button>
+          {derived.canCreateIntake && (
             <button
               type="button"
               data-testid="scheduler-intake-create"
@@ -69,9 +76,9 @@ function SchedulerIntakeDialog({ selectedDate, onClose, onSubmit }: SchedulerInt
             >
               {state.isSubmitting ? translate('scheduler.intake.creating') : translate('scheduler.intake.create')}
             </button>
-          </div>
-        )
-        : null}
+          )}
+        </div>
+      )}
     >
       <div className="min-h-0 min-w-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto pr-1 pb-0.5">
         <SchedulerIntakeHeader

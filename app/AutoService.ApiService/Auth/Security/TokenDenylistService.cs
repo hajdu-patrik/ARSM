@@ -5,9 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Auth.Security;
 
+/** Revokes access tokens by JWT id and answers whether one is revoked. */
 internal interface ITokenDenylistService
 {
+    /** Denylists the id until the token's own expiry; an already expired token is ignored. */
     Task RevokeAsync(string jwtId, DateTimeOffset expiresAtUtc, CancellationToken cancellationToken = default);
+
+    /** True while the id is denylisted. */
     Task<bool> IsRevokedAsync(string jwtId, CancellationToken cancellationToken = default);
 }
 
@@ -75,7 +79,14 @@ internal sealed class TokenDenylistService(
             existing.ExtendExpiry(expiresAtUtcDateTime);
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (UniqueConstraintDetection.IsUniqueConstraintViolation(exception))
+        {
+            // A parallel request already stored this JTI, so the token is revoked; the in-memory entry stays.
+        }
     }
 
     public async Task<bool> IsRevokedAsync(string jwtId, CancellationToken cancellationToken = default)
@@ -108,6 +119,7 @@ internal sealed class TokenDenylistService(
         return true;
     }
 
+    /** Drops the in-memory entries whose token has expired on its own. */
     private void PruneExpired()
     {
         var nowUtc = DateTime.UtcNow;

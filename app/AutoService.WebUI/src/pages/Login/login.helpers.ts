@@ -22,7 +22,7 @@ export type LoginError =
   | { key: 'login.error' };
 
 /** Why an identifier is refused: left empty, the wrong shape, or typed into the other login method. */
-export type InvalidIdentifierReason = 'required' | 'format' | 'wrong_method_email' | 'wrong_method_phone';
+type InvalidIdentifierReason = 'required' | 'format' | 'wrong_method_email' | 'wrong_method_phone';
 
 /** Parsed login identifier model for email or EU phone input. */
 export type ParsedIdentifier =
@@ -60,8 +60,7 @@ const ACCEPTED_EU_COUNTRY_CALLING_CODES = new Set([
 /** Heuristic check: does the input look like a phone number (not an email)? */
 function looksLikePhone(value: string): boolean {
   const stripped = value.replaceAll(/\D/g, '');
-  if (!stripped || stripped.length < 7) return false;
-  return value.trim().startsWith('+') || stripped.length >= 7;
+  return stripped.length >= 7;
 }
 
 /** Email mode: refuses a phone-shaped value as the wrong method, otherwise checks and lowercases the address. */

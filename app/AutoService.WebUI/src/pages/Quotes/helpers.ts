@@ -1,4 +1,4 @@
-/** Quotes page helpers: form-state shapes, status-filter/validation mapping, and the live line preview (the only client-side amount calc; see CLAUDE.md). */
+/** Quotes page helpers: form-state shapes, filter and validation mapping, and the live line preview. */
 
 import { DEFAULT_VAT_RATE_PERCENT, type LaborTypeDto, type PartDto } from '../../types/catalog/catalog.types';
 import {
@@ -14,20 +14,23 @@ import type { AppointmentDto } from '../../types/scheduler/scheduler.types';
 /** Id in the key of a switched-off query: real ids start at 1, so that key is never fetched or shared with a record. */
 export const IDLE_QUERY_ENTITY_ID = 0;
 
-/** Status chips offered by the toolbar: the four stored values, the computed expiry, and no filter. */
+/** Status chips offered by the toolbar: no filter, the four stored statuses and the computed Expired. */
 export const QUOTE_STATUS_FILTERS = ['All', 'Draft', 'Sent', 'Expired', 'Accepted', 'Rejected'] as const;
 
 export type QuoteStatusFilter = (typeof QUOTE_STATUS_FILTERS)[number];
 
+/** Narrows a string to one of the toolbar status chips. */
 export function isQuoteStatusFilter(value: string): value is QuoteStatusFilter {
   return QUOTE_STATUS_FILTERS.some((filter) => filter === value);
 }
 
+/** Whether the quote's lines can be edited: a draft the server has not locked. */
+export function canEditQuoteLines(quote: QuoteDetailDto | null): boolean {
+  return quote !== null && !quote.isLocked && quote.status === 'Draft';
+}
+
 /** What the badge shows: the stored status, or Expired for a sent quote past its deadline. */
 export type QuoteDisplayStatus = QuoteStatus | 'Expired';
-
-/** Whether the editor is creating a new draft or working on an existing quote. */
-export type QuoteEditorMode = 'create' | 'edit';
 
 /** Quote header form state; every field is a string because it is bound to an input. */
 export interface QuoteHeaderFormState {
@@ -70,7 +73,7 @@ export interface QuoteHeaderFieldErrors {
 }
 
 /** Line fields the client rejected, as the i18n key of their error text; an absent field is valid. */
-export interface QuoteLineFieldErrors {
+interface QuoteLineFieldErrors {
   readonly quantity?: string;
   readonly description?: string;
   readonly netUnitPrice?: string;
@@ -91,9 +94,11 @@ function toDateInputValue(isoValue: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** Converts a `yyyy-MM-dd` input to the end of that UTC day (not midnight), since "valid through this day" would otherwise be instantly past. */
-export function toValidUntilIso(dateInputValue: string): string {
-  return new Date(`${dateInputValue}T23:59:59.000Z`).toISOString();
+/** Converts a `yyyy-MM-dd` input to the end of that UTC day, so "valid through this day" is not already past. */
+export function toValidUntilIso(dateInputValue: string): string | null {
+  const date = new Date(`${dateInputValue}T23:59:59.000Z`);
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 /** True when a quote's validity deadline is already behind us; the server refuses to send such a draft. */
@@ -101,7 +106,7 @@ export function isValidityPassed(validUntil: string): boolean {
   return new Date(validUntil) < new Date();
 }
 
-/** Builds the header form for a new draft, with the default validity window pre-filled (D22). */
+/** Builds the header form for a new draft, with the default validity window pre-filled. */
 export function buildDefaultQuoteHeaderForm(): QuoteHeaderFormState {
   const validUntil = new Date();
   validUntil.setUTCDate(validUntil.getUTCDate() + DEFAULT_QUOTE_VALIDITY_DAYS);
@@ -114,6 +119,7 @@ export function buildDefaultQuoteHeaderForm(): QuoteHeaderFormState {
   };
 }
 
+/** Builds the header form from a saved quote so the editor starts from its stored values. */
 export function buildQuoteHeaderForm(quote: QuoteDetailDto): QuoteHeaderFormState {
   return {
     title: quote.title,
@@ -123,7 +129,7 @@ export function buildQuoteHeaderForm(quote: QuoteDetailDto): QuoteHeaderFormStat
   };
 }
 
-/** Reports whether the header form differs from the saved quote; the validity deadline is excluded on purpose since it saves via its own action (D23). */
+/** Whether the header form differs from the saved quote; validity is excluded, it saves via its own action. */
 export function hasQuoteHeaderChanges(form: QuoteHeaderFormState, quote: QuoteDetailDto): boolean {
   const notes = form.notes.trim();
 
@@ -173,14 +179,14 @@ export function validateQuoteLineForm(form: QuoteLineFormState): QuoteLineFieldE
   return errors;
 }
 
-/** Picks the label set for a line kind: a part is in pieces at a unit price, labor in hours at an hourly rate (requirement 4). */
+/** Picks the label set for a line kind: a part is in pieces at a unit price, labor in hours at an hourly rate. */
 export function resolveLineLabelKeys(lineKind: QuoteLineKind): { quantityKey: string; unitPriceKey: string } {
   return lineKind === 'Labor'
     ? { quantityKey: 'quotes.line.hours', unitPriceKey: 'common.fields.hourlyNetRate' }
     : { quantityKey: 'quotes.line.quantity', unitPriceKey: 'common.fields.netUnitPrice' };
 }
 
-/** Applies a catalog selection to the line form, pre-filling snapshot fields while leaving them editable so an override still wins server-side. */
+/** Applies a catalog selection to the line form, pre-filling the snapshot fields but leaving them editable. */
 export function applyCatalogSelection(
   form: QuoteLineFormState,
   catalogId: string,
@@ -218,12 +224,12 @@ export function applyCatalogSelection(
     : { ...form, catalogId };
 }
 
-/** Resolves the badge status; Expired comes from the server's isExpired flag, never a stored status, so the rule stays in one place (D7). */
+/** Resolves the badge status; Expired comes from the server's isExpired flag, never a stored status. */
 export function resolveQuoteDisplayStatus(quote: Pick<QuoteListItemDto, 'status' | 'isExpired'>): QuoteDisplayStatus {
   return quote.isExpired ? 'Expired' : quote.status;
 }
 
-/** Server filter for a toolbar chip: Expired is a Sent quote past its deadline (D7), and the Sent chip excludes it. */
+/** Server filter for a toolbar chip: Expired is a Sent quote past its deadline, and the Sent chip excludes it. */
 export function toQuoteListFilter(filter: QuoteStatusFilter): { status?: QuoteStatus; expired?: boolean } {
   if (filter === 'All') {
     return {};
@@ -236,14 +242,19 @@ export function toQuoteListFilter(filter: QuoteStatusFilter): { status?: QuoteSt
   return filter === 'Sent' ? { status: filter, expired: false } : { status: filter };
 }
 
-/** Orders appointments newest first by scheduled date, later id first on a tie; the cached history keeps the server's ascending order. */
+/** Orders appointments newest first by scheduled date, later id first on a tie. */
 export function sortAppointmentsNewestFirst(appointments: readonly AppointmentDto[]): AppointmentDto[] {
   return [...appointments].sort(
     (left, right) => Date.parse(right.scheduledDate) - Date.parse(left.scheduledDate) || right.id - left.id,
   );
 }
 
-/** Live line-amount preview before the server line exists; mirrors `Pricing/QuoteLineCalculator` (gross = net + vat, never a multiplication), the only client-side amount calculation. */
+/** Divides integers and rounds the quotient half away from zero, like `MidpointRounding.AwayFromZero`. */
+function divideRoundAwayFromZero(numerator: number, denominator: number): number {
+  return Math.sign(numerator) * Math.floor((Math.abs(numerator) + denominator / 2) / denominator);
+}
+
+/** Live line-amount preview mirroring `Pricing/QuoteLineCalculator` (gross = net + vat); the only client-side amount calculation. */
 export function computeQuoteLineAmountsPreview(
   quantity: number,
   netUnitPrice: number,
@@ -253,13 +264,14 @@ export function computeQuoteLineAmountsPreview(
     return { netAmount: 0, vatAmount: 0, grossAmount: 0 };
   }
 
-  const netAmount = Math.round(quantity * netUnitPrice * 100) / 100;
-  const vatAmount = Math.round(((netAmount * vatRatePercent) / 100) * 100) / 100;
+  // Integer arithmetic (hundredths of a unit), so the half-cent rounding equals the server's decimal AwayFromZero.
+  const netCents = divideRoundAwayFromZero(Math.round(quantity * 100) * Math.round(netUnitPrice * 100), 100);
+  const vatCents = divideRoundAwayFromZero(netCents * vatRatePercent, 100);
 
-  return { netAmount, vatAmount, grossAmount: netAmount + vatAmount };
+  return { netAmount: netCents / 100, vatAmount: vatCents / 100, grossAmount: (netCents + vatCents) / 100 };
 }
 
-/** Hands a downloaded blob to the browser as a file; the object URL is revoked right after the click to avoid leaking memory for the document's lifetime. */
+/** Hands a downloaded blob to the browser as a file and revokes the object URL right after the click. */
 export function saveBlobAsFile(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');

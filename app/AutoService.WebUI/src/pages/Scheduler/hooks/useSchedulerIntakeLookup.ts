@@ -40,6 +40,7 @@ export function useSchedulerIntakeLookup({
   }, []);
 
   const resetLookupDependentState = useCallback(() => {
+    lookupRequestIdRef.current += 1;
     resetLookupState();
     onLookupReset();
   }, [onLookupReset, resetLookupState]);

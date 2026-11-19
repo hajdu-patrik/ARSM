@@ -1,13 +1,12 @@
 /** The shared Dropdown that replaced the native selects: combobox/listbox ARIA, keyboard control,
  * dismissal by outside click and Escape, and the same behaviour inside a modal. */
 import { expect, test } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { CustomersPage } from './pages/customers.page';
 import { QuotesPage } from './pages/quotes.page';
 import { installApiMocks } from './support/api-mocks';
 import { primeBrowserState } from './support/browser-state';
 import { selectDropdownOptionByLabel } from './support/dropdown';
-import { getAppointmentFlowEnv } from './support/e2e-env';
+import { signInWithMocks } from './support/sign-in';
 import { MOCK_CUSTOMER_IDS } from './support/test-data';
 
 const STATUS_FILTER = 'quotes-status-filter';
@@ -93,9 +92,7 @@ test.describe('Dropdown on the Quotes status filter', () => {
 
 test.describe('Dropdown inside a modal', () => {
   test('opens above the dialog, and Escape closes only the list before the dialog', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
     await page.setViewportSize({ width: 1280, height: 1000 });
     const customersPage = new CustomersPage(page);
     await customersPage.goto();

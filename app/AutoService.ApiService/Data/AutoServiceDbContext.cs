@@ -1,14 +1,15 @@
+using AutoService.ApiService.CompanyProfiles;
 using AutoService.ApiService.Domain;
 using AutoService.ApiService.Pricing;
 using AutoService.ApiService.Security;
 using AutoService.ApiService.Domain.UniqueTypes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoService.ApiService.Data;
 
+/** The Identity-backed EF context; the per-area model configuration lives in the AutoServiceDbContext.*Model partials. */
 public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbContext> options) : IdentityDbContext<IdentityUser>(options)
 {
     public DbSet<People> People => Set<People>();
@@ -22,183 +23,15 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
     public DbSet<LaborType> LaborTypes => Set<LaborType>();
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<QuoteLine> QuoteLines => Set<QuoteLine>();
-    public DbSet<AutoService.ApiService.CompanyProfiles.CompanyProfileEntity> CompanyProfiles => Set<AutoService.ApiService.CompanyProfiles.CompanyProfileEntity>();
+    public DbSet<CompanyProfileEntity> CompanyProfiles => Set<CompanyProfileEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<People>(entity =>
-        {
-            entity.ToTable("people");
-            entity.HasDiscriminator<string>("PersonType")
-                  .HasValue<Customer>("Customer")
-                  .HasValue<Mechanic>("Mechanic");
-
-            entity.Property(x => x.Email).HasMaxLength(150).IsRequired();
-            entity.HasIndex(x => x.Email).IsUnique();
-            entity.Property(x => x.IdentityUserId).HasMaxLength(450);
-            entity.HasIndex(x => x.IdentityUserId).IsUnique();
-            entity.Property(x => x.PhoneNumber).HasMaxLength(20);
-            // Login resolves a phone with FirstOrDefault, so the database, not the handlers' pre-checks, must keep it unique.
-            entity.HasIndex(x => x.PhoneNumber).IsUnique().HasFilter("\"PhoneNumber\" IS NOT NULL");
-            entity.Property(x => x.ProfilePictureObjectKey).HasMaxLength(256).HasColumnName("ProfilePictureObjectKey");
-            entity.Property(x => x.ProfilePictureETag).HasMaxLength(80).HasColumnName("ProfilePictureETag");
-            entity.Property(x => x.ProfilePictureContentType).HasMaxLength(50).HasColumnName("ProfilePictureContentType");
-            entity.Property(x => x.TokensValidAfter).HasColumnName("TokensValidAfter").HasColumnType("timestamp with time zone");
-
-            entity.OwnsOne(x => x.Name, name =>
-            {
-                name.Property(x => x.FirstName).HasMaxLength(50).HasColumnName("FirstName").IsRequired();
-                name.Property(x => x.MiddleName).HasMaxLength(50).HasColumnName("MiddleName");
-                name.Property(x => x.LastName).HasMaxLength(50).HasColumnName("LastName").IsRequired();
-            });
-        });
-
-        modelBuilder.Entity<Customer>(entity =>
-        {
-            entity.HasMany(x => x.Vehicles)
-                  .WithOne(x => x.Customer)
-                  .HasForeignKey(x => x.CustomerId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<Mechanic>(entity =>
-        {
-            entity.ToTable(table =>
-            {
-                table.HasCheckConstraint("CK_Mechanics_Expertise_NotEmpty", "\"Expertise\" <> ''");
-            });
-
-            entity.Property(x => x.Specialization)
-                  .HasConversion<string>()
-                  .HasMaxLength(64)
-                  .IsRequired();
-
-            entity.Property(x => x.Expertise)
-                  .HasConversion(
-                    list => string.Join(',', list.Distinct().Select(x => x.ToString())),
-                    value => string.IsNullOrWhiteSpace(value)
-                        ? new List<ExpertiseType>()
-                        : value
-                            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                            .Select(Enum.Parse<ExpertiseType>)
-                            .Distinct()
-                            .ToList())
-                  .Metadata.SetValueComparer(new ValueComparer<List<ExpertiseType>>(
-                    (a, b) => a != null && b != null && a.SequenceEqual(b),
-                    v => v.Aggregate(0, (hash, item) => HashCode.Combine(hash, item)),
-                    v => v.ToList()));
-
-            entity.Property(x => x.Expertise)
-                  .HasMaxLength(256)
-                  .IsRequired();
-
-            // TPH: the column is shared with customer rows, so it defaults to false instead of allowing null.
-            entity.Property(x => x.MustChangePassword).HasDefaultValue(false);
-        });
-
-        modelBuilder.Entity<RefreshToken>(entity =>
-        {
-            entity.ToTable("refreshtokens");
-
-            entity.Property(x => x.TokenHash)
-                .HasMaxLength(128)
-                .IsRequired();
-
-            entity.Property(x => x.CreatedByIpAddress)
-                .HasMaxLength(64);
-
-            entity.Property(x => x.CreatedByUserAgent)
-                .HasMaxLength(RefreshToken.MaxUserAgentLength);
-
-            entity.HasIndex(x => x.TokenHash)
-                .IsUnique();
-
-            entity.HasIndex(x => new { x.MechanicId, x.ExpiresAtUtc });
-
-            entity.HasOne(x => x.Mechanic)
-                .WithMany()
-                .HasForeignKey(x => x.MechanicId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<RevokedJwtToken>(entity =>
-        {
-            entity.ToTable("revokedjwttokens");
-
-            entity.Property(x => x.JwtId)
-                .HasMaxLength(64)
-                .IsRequired();
-
-            entity.Property(x => x.RevokedAtUtc)
-                .IsRequired();
-
-            entity.Property(x => x.ExpiresAtUtc)
-                .IsRequired();
-
-            entity.HasIndex(x => x.JwtId)
-                .IsUnique();
-
-            entity.HasIndex(x => x.ExpiresAtUtc);
-        });
-
-        modelBuilder.Entity<Vehicle>(entity =>
-        {
-            entity.ToTable("vehicles", table =>
-            {
-                table.HasCheckConstraint("CK_Vehicles_Year", "\"Year\" >= 1886 AND \"Year\" <= 2100");
-                table.HasCheckConstraint("CK_Vehicles_MileageKm", "\"MileageKm\" >= 0");
-                table.HasCheckConstraint("CK_Vehicles_EnginePowerKw", "\"EnginePowerKw\" >= 0");
-                table.HasCheckConstraint("CK_Vehicles_Vin", "\"Vin\" ~ '^[A-HJ-NPR-Z0-9]{17}$'");
-            });
-
-            entity.HasIndex(v => v.LicensePlate).IsUnique();
-            entity.HasIndex(v => v.Vin).IsUnique();
-
-            entity.Property(x => x.LicensePlate).HasMaxLength(20).IsRequired();
-            entity.Property(x => x.Vin).HasMaxLength(17).IsRequired();
-            entity.Property(x => x.Brand).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.Model).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.Year).IsRequired();
-            entity.Property(x => x.MileageKm).IsRequired();
-            entity.Property(x => x.EnginePowerKw).IsRequired();
-            entity.Property(x => x.DrivetrainType).HasConversion<string>().HasMaxLength(16).IsRequired();
-
-            entity.HasMany(x => x.Appointments)
-                  .WithOne(x => x.Vehicle)
-                  .HasForeignKey(x => x.VehicleId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<Appointment>(entity =>
-        {
-            entity.ToTable("appointments");
-
-            entity.Property(x => x.ScheduledDate).IsRequired();
-            entity.Property(x => x.IntakeCreatedAt).IsRequired();
-            entity.Property(x => x.DueDateTime).IsRequired();
-            entity.Property(x => x.TaskDescription).HasMaxLength(200).IsRequired();
-            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
-            entity.Property(x => x.CompletedAt);
-            entity.Property(x => x.CanceledAt);
-
-            entity.HasIndex(x => x.ScheduledDate);
-            entity.HasIndex(x => x.DueDateTime);
-            entity.MapXminVersion();
-
-            entity.HasMany(x => x.Mechanics)
-                  .WithMany(x => x.Appointments)
-                  .UsingEntity<Dictionary<string, object>>(
-                    "appointmentmechanics",
-                    j => j.HasOne<Mechanic>().WithMany().HasForeignKey("MechanicId").OnDelete(DeleteBehavior.Cascade),
-                    j => j.HasOne<Appointment>().WithMany().HasForeignKey("AppointmentId").OnDelete(DeleteBehavior.Cascade),
-                    j =>
-                    {
-                        j.ToTable("appointmentmechanics");
-                        j.HasKey("AppointmentId", "MechanicId");
-                    });
-        });
+        ConfigurePeopleModel(modelBuilder);
+        ConfigureTokensModel(modelBuilder);
+        ConfigureSchedulingModel(modelBuilder);
 
         ConfigurePricingModel(modelBuilder);
         ConfigureQuotesModel(modelBuilder);
@@ -213,6 +46,7 @@ public sealed partial class AutoServiceDbContext(DbContextOptions<AutoServiceDbC
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
+    /** Async twin of SaveChanges: runs the same expertise and quote-total validation first. */
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         ValidateMechanicExpertise();

@@ -3,6 +3,7 @@ import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { APP_ROUTE_PATHS } from '../../../router/appRoutes';
 import { Modal } from '../../../components/common/Modal';
 import { useAppointmentQuoteLink } from '../../../hooks/useAppointmentQuoteLink';
 import type { AppointmentDto } from '../../../types/scheduler/scheduler.types';
@@ -52,7 +53,7 @@ export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
 
   const handleOpenInScheduler = useCallback(() => {
     onClose();
-    void navigate('/', {
+    void navigate(APP_ROUTE_PATHS.scheduler, {
       state: {
         focusAppointmentId: appointment?.id,
         focusScheduledDate: appointment?.scheduledDate,
@@ -86,7 +87,6 @@ export const HistoryAppointmentModal = memo(function HistoryAppointmentModal({
             onClick={handleOpenInScheduler}
             className={compactChipNeutralButtonClass}
             title={t('customers.openInScheduler')}
-            aria-label={t('customers.openInScheduler')}
           >
             <CalendarDays className={smallIconClass} />
             <span className="min-w-0 whitespace-normal text-center">{t('customers.checkAppointment')}</span>

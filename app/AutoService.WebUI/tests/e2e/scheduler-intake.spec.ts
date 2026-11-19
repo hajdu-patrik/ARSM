@@ -1,19 +1,14 @@
 import { expect, test } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { SchedulerPage } from './pages/scheduler.page';
 import { lookupCustomerWithVehicle } from './support/appointment-fixtures';
 import { serveLookupAnswer } from './support/appointment-route-overrides';
 import { expectDropdownValue } from './support/dropdown';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
 import { signInWithMocks } from './support/sign-in';
 import { toastMessage } from './support/toast';
 
 test.describe('Scheduler intake customer lookup', () => {
   test.beforeEach(async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env);
+    await signInWithMocks(page);
   });
 
   test('finds a customer by exact vehicle license plate and preselects the matched vehicle', async ({ page }) => {
@@ -85,9 +80,7 @@ test.describe('Scheduler intake customer lookup', () => {
 
 test.describe('Scheduler intake new vehicle validation', () => {
   test('uses localized VIN, kW, and drivetrain fields for new vehicle validation', async ({ page }) => {
-    const env = getAppointmentFlowEnv();
-    await installApiMocks(page, { profileEmail: env.mechanicEmail });
-    await new AuthPage(page).loginAsMechanic(env, 'hu');
+    await signInWithMocks(page, {}, 'hu');
 
     const schedulerPage = new SchedulerPage(page);
     await schedulerPage.goto();
@@ -146,4 +139,20 @@ test.describe('Scheduler intake lookup keeps what the server found', () => {
       await expect(dialog.getByTestId('scheduler-intake-customer-email')).toHaveCount(0);
     });
   }
+});
+
+test.describe('Scheduler intake cancel path', () => {
+  test('offers Cancel before any customer is chosen and closes the dialog with it', async ({ page }) => {
+    await signInWithMocks(page);
+    const scheduler = new SchedulerPage(page);
+    await scheduler.goto();
+    const dialog = await scheduler.openIntakeForCurrentDay();
+
+    await expect(dialog.getByTestId('scheduler-intake-create')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible();
+
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+    await expect(scheduler.intakeDialog()).toHaveCount(0);
+  });
 });

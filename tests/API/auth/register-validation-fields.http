@@ -1,5 +1,5 @@
-# Register required fields, person type, specialization, expertise, email and phone format. Failures after the Identity user
-# exists (specialization, expertise value) must roll it back. Names and lengths: register-validation-names-and-lengths.http.
+# Register required fields, person type, specialization, expertise, email and phone format. A specialization or expertise refusal comes
+# before any Identity write; the follow-up request proves no user is left. Names and lengths: register-validation-names-and-lengths.http.
 
 @AutoService_ApiService_HostAddress = {{$processEnv AutoService_ApiService_HostAddress}}
 @WebUI_Origin = {{$processEnv ARSM_TEST_WEBUI_ORIGIN}}
@@ -150,7 +150,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] An expertise value outside the enum fails after the Identity user exists (400 expected)
+### [Negative][Register] An expertise value outside the enum is refused before any Identity write (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}
@@ -163,7 +163,7 @@ Content-Type: application/json
 
 ###
 
-### [Negative][Register] A specialization outside the enum fails the same way (400 expected)
+### [Negative][Register] A specialization outside the enum is refused the same way (400 expected)
 POST {{AutoService_ApiService_HostAddress}}/api/auth/register
 Origin: {{WebUI_Origin}}
 X-CSRF-Token: {{CsrfToken}}

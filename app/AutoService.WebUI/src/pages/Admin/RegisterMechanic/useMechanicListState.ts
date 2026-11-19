@@ -124,7 +124,13 @@ export function useMechanicListState({
       showSuccessToast('admin.mechanicDeleted', { email: target.email });
       setDeleteTarget(null);
     },
-    onError: (error) => {
+    onError: (error, target) => {
+      // The mechanic is already gone: refresh the roster and drop the dialog for it.
+      if (isAxiosError(error) && error.response?.status === 404) {
+        refreshRoster();
+        setDeleteTarget((current) => (current?.personId === target.personId ? null : current));
+      }
+
       showErrorToast(getDeleteErrorKey(error));
     },
   });

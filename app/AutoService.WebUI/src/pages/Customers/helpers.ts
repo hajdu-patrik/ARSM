@@ -4,7 +4,7 @@ import type { ServerFieldErrors } from '../../utils/serverValidation';
 import type { SortDirection } from './page.types';
 
 /** Structured numeric values extracted from vehicle form inputs. */
-export interface VehicleNumericValues {
+interface VehicleNumericValues {
   readonly year: number;
   readonly mileageKm: number;
   readonly enginePowerKw: number;

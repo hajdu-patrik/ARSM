@@ -16,13 +16,9 @@ export const compactUtilityButtonClass = `inline-flex h-11 min-h-11 min-w-11 shr
 export const sidebarShellIconButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent p-2 text-ui-label hover:bg-ui-hover hover:text-arsm-accent-deep ${focusVisibleOutlineClass} dark:hover:text-arsm-primary-dark ${iconButtonMicroInteractionClass}`;
 export const modalConfirmCloseButtonClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent text-ui-muted hover:bg-ui-hover hover:text-ui-text ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-ui-muted ${iconButtonMicroInteractionClass}`;
 
-/** Bordered 44x44 icon button core (geometry, focus, motion, neutral disabled look); each tone below adds its colors. */
-const iconToneButtonBaseClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-60 disabled:border-ui-border disabled:bg-ui-toggle disabled:text-ui-muted disabled:hover:bg-ui-toggle disabled:hover:text-ui-muted ${iconButtonMicroInteractionClass}`;
 /** Size-free colors of the bordered icon button tones, for icon buttons of another size. */
 export const iconDangerToneClass = 'border-arsm-error-border bg-ui-error-bg text-arsm-error-text hover:bg-arsm-error-softest hover:text-arsm-error-text dark:border-arsm-error-dark dark:text-arsm-error-text-light dark:hover:bg-arsm-error-bg-dark/85 dark:hover:text-arsm-error-text-light';
 export const iconWarningToneClass = 'border-ui-warning-border bg-ui-warning-bg text-ui-warning-text hover:bg-ui-warning-border/35 hover:text-ui-warning-text';
-export const iconDangerButtonClass = `${iconToneButtonBaseClass} ${iconDangerToneClass}`;
-export const iconWarningButtonClass = `${iconToneButtonBaseClass} ${iconWarningToneClass}`;
 
 /** Compact chip core (geometry, typography, focus, disabled) without the 44px touch sizing, which each chip base adds at its own breakpoint. */
 export const compactChipCoreClass = `inline-flex min-h-7 min-w-0 max-w-full shrink-0 items-center justify-center gap-1 rounded-xl border px-2.5 py-0.5 text-xs font-semibold leading-normal tracking-normal whitespace-nowrap transition-colors ${focusVisibleOutlineClass} disabled:cursor-not-allowed disabled:opacity-60`;
@@ -38,7 +34,6 @@ export const compactChipDangerButtonClass = `${compactChipActionBaseClass} ${dan
 
 /** Filter chips: the compact chips with the 44px touch target below lg (1024px) instead of sm, for controls beside the filter select. */
 export const compactFilterChipActionBaseClass = `${compactChipCoreClass} max-lg:min-h-11 max-lg:px-3 max-lg:py-2 max-[350px]:whitespace-normal max-[350px]:text-center`;
-export const compactFilterChipNeutralButtonClass = `${compactFilterChipActionBaseClass} ${compactChipNeutralToneClass}`;
 
 /** Row-level 44x44 icon actions (vehicle/quote/catalog rows, card expand toggles): scale + tone-background hover whose icon color never loses contrast (darkest tone text in light, lightest in dark); disabled renders neutral grey with no hover. */
 const rowIconActionBaseClass = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl disabled:cursor-not-allowed disabled:text-ui-muted disabled:opacity-60 disabled:hover:bg-transparent disabled:hover:text-ui-muted ${iconButtonMicroInteractionClass} ${focusVisibleOutlineClass}`;

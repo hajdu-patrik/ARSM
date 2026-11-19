@@ -42,13 +42,14 @@ Hungarian version: [README(HU).md](README(HU).md)
 
 ## Run locally
 
-Prerequisites: .NET 10 SDK, Node.js 24+, Python 3.11+, Docker Desktop.
+Prerequisites: .NET 10 SDK, Node.js 24+, Python 3.12+, Docker Desktop.
 
 1. Copy `app/AutoService.ApiService/appsettings.Local.template.json` to `appsettings.Local.json` (gitignored) and fill in
    `JwtSettings.Secret`, `ConnectionStrings.AutoServiceDb`, `CompanyProfile.*` (quote letterhead seed) and optionally
    `Bootstrap.Admin.*` (first admin on an empty database; the API seeds no other data).
 2. Set the object store secrets once:
-   `dotnet user-secrets set "Parameters:minio-user" "<user>"` and `"Parameters:minio-password" "<password>"` in `app/AutoService.AppHost`.
+   `dotnet user-secrets set "Parameters:minio-user" "<user>"` and `"Parameters:minio-password" "<password>"` in `app/AutoService.AppHost`; set
+   `"Parameters:postgres-password"` and `"Parameters:jwt-secret"` the same way.
 3. Install and start:
 
 ```bash
@@ -87,11 +88,11 @@ How a change goes out:
 
 1. **Develop and check.** Work on a local branch, run `python scripts/validate.py`, add a `CHANGELOG.md` entry, then
    bring the commit onto `main`. The remote holds only `main`.
-2. **Push = test release.** `git push origin main` first runs the pre-push gate (validate, backend, frontend, E2E, HTTP
-   and SQL suites on throwaway containers). Once pushed, the scheduled task of the test kit (`deploy/local-test/deploy.py`,
-   every 5 minutes) sees the new commit, backs up the test database, builds the API and web images from that commit
-   (`git archive`), recreates the two app containers and waits until `/` and `/alive` answer. The API applies new
-   migrations at startup, so the test instance runs the new version within a few minutes.
+2. **Push.** `git push origin main` first runs the pre-push gate (validate, backend, frontend, E2E, HTTP
+   and SQL suites on throwaway containers). If the test instance is set up again, the scheduled task of its kit
+   (`deploy/local-test/deploy.py`, every 5 minutes) then sees the new commit, backs up the test database, builds the API
+   and web images from that commit (`git archive`), recreates the two app containers and waits until `/` and `/alive`
+   answer. The API applies new migrations at startup, so that instance runs the new version within a few minutes.
 3. **Production release.** After checking it (on the test instance, when one is set up), run from the clone that holds the production `.env`
    (`az login` first): `python scripts/deploy-azure.py release --commit <sha>`. It builds and pushes the three images
    tagged with the commit, runs the `arsm-migrate` job (migrations and the `arsm_app` role) and only after it succeeds

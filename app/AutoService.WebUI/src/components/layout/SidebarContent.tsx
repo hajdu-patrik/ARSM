@@ -59,7 +59,7 @@ interface SidebarProfileSummaryProps {
 }
 
 const DEFAULT_NAV_ITEMS: readonly NavItem[] = [
-  { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: APP_ROUTE_PATHS.schedulerAlias },
+  { key: 'scheduler', labelKey: 'nav.scheduler', icon: CalendarDays, path: APP_ROUTE_PATHS.scheduler },
   { key: 'customers', labelKey: 'nav.customers', icon: Users, path: APP_ROUTE_PATHS.customers },
   { key: 'quotes', labelKey: 'nav.quotes', icon: FileText, path: APP_ROUTE_PATHS.quotes },
   { key: 'inventory', labelKey: 'nav.inventory', icon: Package, path: APP_ROUTE_PATHS.inventory },
@@ -117,6 +117,7 @@ const SidebarNavLink = memo(function SidebarNavLink({
   return (
     <NavLink
       to={item.path}
+      end={item.key === 'scheduler'}
       onClick={onCloseMobile}
       className={({ isActive }) => getSidebarNavLinkClassName(item, pathname, isActive)}
       title={collapsed ? translate(item.labelKey) : undefined}

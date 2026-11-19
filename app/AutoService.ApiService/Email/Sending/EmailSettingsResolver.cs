@@ -2,8 +2,8 @@ using AutoService.ApiService.Configuration;
 
 namespace AutoService.ApiService.Email.Sending;
 
-/** Resolves the Email section (Email__* environment variables win through the configuration
-    providers); a blank Endpoint is valid (no-op sender), a set one makes the other values required. */
+/** Resolves the Email section from configuration (Email__* variables arrive via the providers,
+    unlike the env-first storage resolvers); a blank Endpoint is valid (no-op sender), a set one makes the other values required. */
 public static class EmailSettingsResolver
 {
     private const string ConfigurationSection = "Email";

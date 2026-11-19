@@ -1,15 +1,14 @@
 /** Column-alignment regression coverage for every `DataList` list, both languages and themes;
  * tests/CLAUDE.md (Coverage Anchors) keeps the exact lists and checks. */
 import { expect, test, type Page } from '@playwright/test';
-import { AuthPage } from './pages/auth.page';
 import { CatalogPage } from './pages/catalog.page';
 import { QuotesPage } from './pages/quotes.page';
-import { getAppointmentFlowEnv } from './support/e2e-env';
-import { installApiMocks } from './support/api-mocks';
+import { signInWithMocks } from './support/sign-in';
 import { selectReportYear } from './support/company-results-period';
 import type { TestLanguage, TestTheme } from './support/browser-state';
 import { seedWorstCaseListData } from './support/list-alignment-fixtures';
 import { expectColumnsAligned, expectRowActionsAligned, listSection } from './support/list-alignment';
+import { PREF_SIDEBAR_COLLAPSED_KEY, PREF_THEME_KEY } from '../../src/utils/browserStorageKeys';
 
 const VIEWPORT = { width: 1440, height: 900 };
 const FRACTIONAL_QUANTITY_TEXT: Record<TestLanguage, string> = { en: '1.5', hu: '1,5' };
@@ -33,23 +32,20 @@ const COMBOS: ReadonlyArray<{ lang: TestLanguage; theme: TestTheme }> = [
 
 /** Installs the mock, seeds worst-case list data, forces the theme before login, and logs in. */
 async function bootListAlignment(page: Page, lang: TestLanguage, theme: TestTheme): Promise<void> {
-  await page.addInitScript((value) => {
-    localStorage.setItem('arsm.pref.theme', value);
-  }, theme);
+  await page.addInitScript(({ key, value }) => {
+    localStorage.setItem(key, value);
+  }, { key: PREF_THEME_KEY, value: theme });
 
-  const env = getAppointmentFlowEnv();
-  const state = await installApiMocks(page, { profileEmail: env.mechanicEmail });
-  seedWorstCaseListData(state);
-
-  await new AuthPage(page).loginAsMechanic(env, lang);
+  // The seeded lists are first read when their page opens, after the sign-in.
+  seedWorstCaseListData(await signInWithMocks(page, {}, lang));
 }
 
 /** Forces the sidebar collapsed from here on; must run after `loginAsMechanic`, because init
  * scripts apply in registration order and its own would otherwise reset this back to `'false'`. */
 async function forceSidebarCollapsed(page: Page, collapsed: boolean): Promise<void> {
-  await page.addInitScript((value) => {
-    localStorage.setItem('arsm.pref.sidebarCollapsed', value);
-  }, collapsed ? 'true' : 'false');
+  await page.addInitScript(({ key, value }) => {
+    localStorage.setItem(key, value);
+  }, { key: PREF_SIDEBAR_COLLAPSED_KEY, value: collapsed ? 'true' : 'false' });
 }
 
 /** Opens a quote through the search box: the lists are page-sized, so a row may sit on a later page. */

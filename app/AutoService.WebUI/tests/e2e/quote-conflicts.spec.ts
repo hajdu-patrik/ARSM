@@ -88,8 +88,7 @@ test.describe('Quotes - concurrent changes', () => {
     await expect(errorToastMessage(page, CONFLICT_MESSAGE)).toBeVisible();
     // The renamed title proves the list was reloaded with the current version.
     await expect(quotesPage.row(DRAFT_NUMBER)).toContainText('Renamed elsewhere');
-    // Whether this dialog stays open is not specified; a dialog opened after the reload must delete.
-    await page.keyboard.press('Escape');
+    // The refused confirmation closes; a dialog opened after the reload carries the current version.
     await expect(confirmDialog).toHaveCount(0);
 
     await quotesPage.rowAction(DRAFT_NUMBER, 'quote-delete-button').click();

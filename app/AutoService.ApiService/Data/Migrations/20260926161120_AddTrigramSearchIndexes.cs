@@ -4,17 +4,13 @@
 
 namespace AutoService.ApiService.Data.Migrations
 {
+    /** Adds the pg_trgm GIN expression indexes behind the name and licence plate search. */
     public partial class AddTrigramSearchIndexes : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // GET /api/customers/by-name keeps its `.ToUpper().Contains(term)` predicate, which Npgsql sends as
-            // `upper(<expr>) LIKE @p` with p = '%' + escaped term + '%'. Only a trigram index can serve a
-            // leading-wildcard LIKE, and PostgreSQL uses an expression index only when the query contains the
-            // same expression, so each index repeats one generated upper(...) expression verbatim (see
-            // Customers/CustomerEndpoints.Lookup.cs). Raw SQL because the EF index API cannot express
-            // `USING gin (<expression> gin_trgm_ops)`; the indexes stay out of the EF model on purpose, so the
-            // model diff never proposes dropping them.
+            // Trigram indexes for the upper(...) LIKE name/plate search (Pagination/PersonNameSearch.cs).
+            // Raw SQL and outside the EF model on purpose; see the Trigram search note in ApiService CLAUDE.md.
             migrationBuilder.Sql("CREATE EXTENSION IF NOT EXISTS pg_trgm;");
 
             migrationBuilder.Sql(
@@ -39,10 +35,8 @@ namespace AutoService.ApiService.Data.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // pg_trgm stays installed. Up used IF NOT EXISTS, so Down cannot tell whether this migration created
-            // it, and DROP EXTENSION would either remove an extension something outside this schema relies on or
-            // abort the whole rollback when an object still depends on it. Nothing in this schema uses it once
-            // the indexes are gone.
+            // pg_trgm stays installed: Up used IF NOT EXISTS, so Down cannot tell whether it created the
+            // extension, and dropping it could break other objects.
             migrationBuilder.Sql(
                 """
                 DROP INDEX "IX_vehicles_LicensePlate_Compact_Trgm";

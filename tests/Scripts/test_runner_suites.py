@@ -53,6 +53,13 @@ class HttpSuiteTests(TempDirCase):
         self.assertEqual(setup[3]["NODE_TLS_REJECT_UNAUTHORIZED"], "0")
         self.assertEqual(setup[3]["KEEP"], "1")
 
+    def test_httpyac_runs_as_one_exact_pinned_version_without_install_scripts(self) -> None:
+        _, calls = self.run_http()
+        for call in (calls[0], calls[-1]):
+            self.assertRegex(call[1][2], r"^httpyac@\d+\.\d+\.\d+$")
+            self.assertEqual(call[3]["npm_config_ignore_scripts"], "true")
+        self.assertEqual(calls[0][1][2], calls[-1][1][2])
+
     def test_python_checks_run_with_the_current_interpreter_and_their_script(self) -> None:
         _, calls = self.run_http()
         for (_, _, script, _), call in zip(runner.PYTHON_HTTP_CHECKS, calls[1:-1]):

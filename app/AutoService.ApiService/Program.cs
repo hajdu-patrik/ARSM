@@ -30,11 +30,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.IO.Compression;
 using System.Net;
-using System.Text;
 using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 

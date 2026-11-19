@@ -112,7 +112,9 @@ test.describe('Customer repair history', () => {
     await customersPage.detailsPanel().getByRole('button', { name: /Hybrid system inspection/ }).click();
     const dialog = page.getByRole('dialog', { name: HISTORY_DIALOG });
 
-    await dialog.getByRole('button', { name: 'Open appointment in scheduler' }).click();
+    const openButton = dialog.getByRole('button', { name: 'Check appointment' });
+    await expect(openButton).toHaveAttribute('title', 'Open appointment in scheduler');
+    await openButton.click();
 
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByTestId('scheduler-intake-open')).toBeVisible();
@@ -182,12 +184,13 @@ test.describe('Repair history over the 500-row cap', () => {
 });
 
 test.describe('Customer repair history failure', () => {
-  test('toasts a failed read and shows the empty note instead of a list', async ({ page }) => {
+  test('toasts a failed read and shows the failure note instead of a list or the empty note', async ({ page }) => {
     const { customersPage } = await CustomersPage.open(page, { failedCustomerHistoryIds: [ANNA] });
 
     await customersPage.expandCustomer(ANNA);
 
     await expect(errorToastMessage(page, 'Failed to load repair history.')).toBeVisible();
-    await expect(customersPage.detailsPanel()).toContainText('No repair history found for this customer.');
+    await expect(customersPage.detailsPanel()).toContainText('Failed to load repair history.');
+    await expect(customersPage.detailsPanel()).not.toContainText('No repair history found for this customer.');
   });
 });
