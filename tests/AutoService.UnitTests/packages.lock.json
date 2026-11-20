@@ -36,15 +36,24 @@
       },
       "AWSSDK.Core": {
         "type": "Transitive",
-        "resolved": "4.0.102.14",
-        "contentHash": "pRYOOIyj40UdQ6G9iq8AOU30sFPqWS/umM/sFTmAl4n1S6AVbVa67DJpJTxD+9qJFqweHPcyVW7Qb4BbUBLJdg=="
+        "resolved": "4.1.0",
+        "contentHash": "7a4eOI65Mn4dzc9kmRiI+y3EiS80NCMnu/j3ZR9H2dyO3d597eVPVV+ClzSFXnQkA0r8n2iig+Vg/Q/mozh5MQ==",
+        "dependencies": {
+          "AWSSDK.Extensions.Numerics": "[4.1.0, 5.0.0)",
+          "System.IO.Hashing": "11.0.0"
+        }
+      },
+      "AWSSDK.Extensions.Numerics": {
+        "type": "Transitive",
+        "resolved": "4.1.0",
+        "contentHash": "hhoiXT1aUyVgIiQbQoqG3L1EEneqXDh2GKyH5izUlO6Rzi9GAAi8S6mlLiVwow23+EGg77zHjdmUi+ia3RSUTg=="
       },
       "AWSSDK.S3": {
         "type": "Transitive",
-        "resolved": "4.0.104.7",
-        "contentHash": "mmURYvVR/+CM3+9FycHsz+ZZ2I3B1PPch7msARX8fKtiAfkDHYXCzdwQOKA5SvGGvleOKhLGa8YcWlAlbAtu0g==",
+        "resolved": "4.1.0",
+        "contentHash": "uV//Txuga5jW6wIE5UXi6RaqAvc0eg76i7vmUDgK2H4yOtrSG4BxF+IdXYOu4sbPG/L6q/k2UbK5L6ptysj9oA==",
         "dependencies": {
-          "AWSSDK.Core": "[4.0.102.14, 5.0.0)"
+          "AWSSDK.Core": "[4.1.0, 5.0.0)"
         }
       },
       "Azure.Communication.Email": {
@@ -763,37 +772,37 @@
       },
       "QuestPDF": {
         "type": "Transitive",
-        "resolved": "2026.9.1",
-        "contentHash": "i2BT/v+Ui6Hg9+BZbOci/VfsyvmtY8nlQqAOmFt8iOZ4Hm9aKZZRgZZ+LfrKWYXAHRb3l1EjDcMVfjRaZTt+Cw=="
+        "resolved": "2026.9.2",
+        "contentHash": "Nc7nvV/CmL/lonuw1mTQbiETfU7EZoM2kZ9YRgdbC5VivVjxsMHPJ18g4t5FMx/jUGh6XpJXFfW1rFWvAYOeTg=="
       },
       "Scalar.AspNetCore": {
         "type": "Transitive",
-        "resolved": "2.18.5",
-        "contentHash": "m7sb2hqbdUXPBa4MvFy7GZ8SU4YGDYhaFkaiATXCMRhIDMA6kJrRQnBO4Z5PRz175sRfYfSXBlyrxckbhhrQ3A=="
+        "resolved": "2.21.0",
+        "contentHash": "pDaxW7B1HqQIU5T64Jn1Txn2JKyVqoOvskCAqTb/lffZyUS8hBxhxmOkJum4wbzFmhc2LsKULVQ/4GDHLb7yjQ=="
       },
       "SkiaSharp": {
         "type": "Transitive",
-        "resolved": "4.154.0",
-        "contentHash": "R3BuszJ3tUFmni37nZIRawXL0yx+XHyx7xi1716/0TybuEQFhnBx48Ig3rFpeVFQVytpGpJZZ+NLW9d9UPG7EA==",
+        "resolved": "4.156.0",
+        "contentHash": "bdBfG346spQvqwvdz7w8yoqquN7MmU89O+TJ9TwnwyFuqhHkBOQnLJ57euu+4XWi99a5uXikDMZmcM4q58HUXw==",
         "dependencies": {
-          "SkiaSharp.NativeAssets.Win32": "4.154.0",
-          "SkiaSharp.NativeAssets.macOS": "4.154.0"
+          "SkiaSharp.NativeAssets.Win32": "4.156.0",
+          "SkiaSharp.NativeAssets.macOS": "4.156.0"
         }
       },
       "SkiaSharp.NativeAssets.Linux.NoDependencies": {
         "type": "Transitive",
-        "resolved": "4.154.0",
-        "contentHash": "U6HQ/n+wQ09WyXQB6PK1l46BIrHqTN/dImV84pti3mLxnlOdcSASPQzJwzuZmEgiCbriLtu5fP0t9cdzpFPHsw=="
+        "resolved": "4.156.0",
+        "contentHash": "VpvL0V18Ffcne/PwqSw0cbVcjs/1NvCGDfDBM81E6NMwLSCnU3N/oeEYiBkAFIC+/H5ciHhkRDHDq4ew74e5ag=="
       },
       "SkiaSharp.NativeAssets.macOS": {
         "type": "Transitive",
-        "resolved": "4.154.0",
-        "contentHash": "GgYL4ML3HT4CW33oXMHdp7BSRU87bPUfWBXdYgNduGlt4GAbAM/3eXcjjUdilS0H1r2R5iBhwvExCfSYGwFKlw=="
+        "resolved": "4.156.0",
+        "contentHash": "pBJ4ARN6ekiBqh+G697sMQmZd4igIEtSdxx9mfxR3nUTxErkrx0JeaU1+IQ4dX8qobG9Fcskv6azW3zPbAEqXQ=="
       },
       "SkiaSharp.NativeAssets.Win32": {
         "type": "Transitive",
-        "resolved": "4.154.0",
-        "contentHash": "GXgoY77GCXdPcveNAmy8o3gVit8sp6YtnI88h5camLPfihjulwJUajZXKhgVuZ8RhuwSTgfyt/00Dx8HRUSeAA=="
+        "resolved": "4.156.0",
+        "contentHash": "D4q5I+N/IBH3LTC/SK51MkfdjuX5JZVSS4gTJHbLPZ9btgga3xSC/gL/lyh18mfpwFmnm6b61DsEv6zrhTy0Ow=="
       },
       "System.ClientModel": {
         "type": "Transitive",
@@ -822,8 +831,8 @@
       },
       "System.IO.Hashing": {
         "type": "Transitive",
-        "resolved": "10.0.9",
-        "contentHash": "vixglGnKEexAJDeIRhyayZYzxyrgK1K9GU3K/zRZVwDbaDcMkSqj4WDHoVmQMNfsdUtLALfNSJw6mBIpdxie4A=="
+        "resolved": "11.0.0",
+        "contentHash": "U+Bv2qCYt6eONi+arSP0QIp4uTO6os6uceBsqiAwruZ+Wo2HrRhO/0tj38M9URJtS+4DhAtT3ka2TGNFYsnhyQ=="
       },
       "System.Memory.Data": {
         "type": "Transitive",
@@ -896,7 +905,7 @@
       "autoservice.apiservice": {
         "type": "Project",
         "dependencies": {
-          "AWSSDK.S3": "[4.0.104.7, )",
+          "AWSSDK.S3": "[4.1.0, )",
           "AutoService.ServiceDefaults": "[1.0.0, )",
           "Azure.Communication.Email": "[1.1.0, )",
           "Azure.Extensions.AspNetCore.DataProtection.Blobs": "[1.5.5, )",
@@ -908,10 +917,10 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.15, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "Npgsql.OpenTelemetry": "[10.0.3, )",
-          "QuestPDF": "[2026.9.1, )",
-          "Scalar.AspNetCore": "[2.18.5, )",
-          "SkiaSharp": "[4.154.0, )",
-          "SkiaSharp.NativeAssets.Linux.NoDependencies": "[4.154.0, )",
+          "QuestPDF": "[2026.9.2, )",
+          "Scalar.AspNetCore": "[2.21.0, )",
+          "SkiaSharp": "[4.156.0, )",
+          "SkiaSharp.NativeAssets.Linux.NoDependencies": "[4.156.0, )",
           "libphonenumber-csharp": "[9.0.43, )"
         }
       },

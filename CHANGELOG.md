@@ -9,6 +9,14 @@ dates are ISO 8601. Every entry ends with a development-time / cost metrics line
 ## [Unreleased]
 
 ### Changed
+- Deferred dependency round (2026-11-20, per `.claude/skills/dependency-upgrade`, OSV and web check per version): i18next
+  27.1.1 with react-i18next 18.0.1 (major; the app already set `fallbackLng: false` and `escapeValue: false`, uses no
+  `Trans` and no i18n mock), `AWSSDK.S3` 4.1.0 (brings `System.IO.Hashing` 11.0.0 and `AWSSDK.Extensions.Numerics`),
+  SkiaSharp 4.156.0, QuestPDF 2026.9.2 and `Scalar.AspNetCore` 2.21.0. Waiting (younger than 7 days): Scalar 3,
+  i18next 27.2, react-i18next 18.0.3, AWSSDK.S3 4.1.2, SkiaSharp 4.157.0. Still deferred by the owner: .NET 11 and
+  Aspire; `@babel/core` stays on 7 for the React Compiler.
+  Full `pre-push.py` gate green (unit, the diff-selected E2E specs, HTTP and SQL suites).
+  _Dev time: ~50 min wall-clock (2026-11-20 14:01 to 14:52 +01:00). cost: not measured._
 - Whole-project audit and cleanup (2026-11-18/19, owner-approved list): five read-only audit agents found no critical
   issue and one high one (the vehicle editor could seed from a stale cached vehicle). The owner approved 100 items, applied
   in one `arsm-chain` run (16 packages): 21 behaviour fixes, among them an atomic password change/reset with token

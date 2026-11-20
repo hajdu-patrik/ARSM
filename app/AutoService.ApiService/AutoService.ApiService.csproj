@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.104.7" />
+    <PackageReference Include="AWSSDK.S3" Version="4.1.0" />
     <PackageReference Include="Azure.Communication.Email" Version="1.1.0" />
     <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Blobs" Version="1.5.5" />
     <PackageReference Include="Azure.Extensions.AspNetCore.DataProtection.Keys" Version="1.6.5" />
@@ -33,14 +33,14 @@
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="Npgsql.OpenTelemetry" Version="10.0.3" />
-    <PackageReference Include="QuestPDF" Version="2026.9.1" />
+    <PackageReference Include="QuestPDF" Version="2026.9.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.15">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Scalar.AspNetCore" Version="2.18.5" />
-    <PackageReference Include="SkiaSharp" Version="4.154.0" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.154.0" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.21.0" />
+    <PackageReference Include="SkiaSharp" Version="4.156.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.156.0" />
   </ItemGroup>
 
   <!-- PDF assets (fonts, logo) travel inside the assembly: a slim container has no system fonts. -->
